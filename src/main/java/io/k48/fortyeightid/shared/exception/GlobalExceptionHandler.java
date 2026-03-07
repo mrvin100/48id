@@ -59,6 +59,28 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(JwtTokenExpiredException.class)
+    ProblemDetail handleJwtExpired(JwtTokenExpiredException ex) {
+        log.error("JWT token expired", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Token Expired");
+        problem.setType(URI.create("https://48id.k48.io/errors/token-expired"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "TOKEN_EXPIRED");
+        return problem;
+    }
+
+    @ExceptionHandler(JwtSignatureException.class)
+    ProblemDetail handleJwtSignature(JwtSignatureException ex) {
+        log.error("JWT signature invalid", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Token Invalid");
+        problem.setType(URI.create("https://48id.k48.io/errors/token-invalid"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "TOKEN_INVALID");
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
