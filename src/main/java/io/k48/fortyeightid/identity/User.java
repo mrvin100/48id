@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.identity.internal;
+package io.k48.fortyeightid.identity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;

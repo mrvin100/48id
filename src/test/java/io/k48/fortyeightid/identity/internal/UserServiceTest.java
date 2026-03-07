@@ -2,6 +2,8 @@ package io.k48.fortyeightid.identity.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;

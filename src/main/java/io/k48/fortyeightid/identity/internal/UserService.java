@@ -1,5 +1,7 @@
 package io.k48.fortyeightid.identity.internal;
 
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
