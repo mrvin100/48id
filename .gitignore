@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 .env
+.env.local
 *.pem
 *.key
 private.pem
+docker-compose.override.yml
+*.log

@@ -1,0 +1,2 @@
+-- Baseline migration placeholder
+-- Actual schema will be added in subsequent sprints
