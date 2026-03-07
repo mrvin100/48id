@@ -6,6 +6,8 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,6 +15,30 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BadCredentialsException.class)
+    ProblemDetail handleBadCredentials(BadCredentialsException ex) {
+        log.error("Authentication failed", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Invalid Credentials");
+        problem.setType(URI.create("https://48id.k48.io/errors/invalid-credentials"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "INVALID_CREDENTIALS");
+        return problem;
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    ProblemDetail handleDisabled(DisabledException ex) {
+        log.error("Account disabled", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Account Disabled");
+        problem.setType(URI.create("https://48id.k48.io/errors/account-disabled"));
+        problem.setProperty("timestamp", Instant.now());
+        var code = ex.getMessage().contains("suspended") ? "ACCOUNT_SUSPENDED" : "ACCOUNT_NOT_ACTIVATED";
+        problem.setProperty("code", code);
+        return problem;
+    }
+
 
     @ExceptionHandler(UserNotFoundException.class)
     ProblemDetail handleUserNotFound(UserNotFoundException ex) {
