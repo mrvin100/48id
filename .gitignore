@@ -39,6 +39,6 @@ out/
 .env.local
 *.pem
 *.key
-private.pem
+!src/main/resources/keys/*.pem
 docker-compose.override.yml
 *.log
