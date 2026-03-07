@@ -3,6 +3,8 @@ package io.k48.fortyeightid.identity.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.k48.fortyeightid.TestcontainersConfiguration;
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

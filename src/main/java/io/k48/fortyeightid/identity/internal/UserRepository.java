@@ -1,12 +1,14 @@
 package io.k48.fortyeightid.identity.internal;
 
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByMatricule(String matricule);
 
