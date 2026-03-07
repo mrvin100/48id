@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="48ID"/>
+    <springProperty scope="context" name="ACTIVE_PROFILES" source="spring.profiles.active" defaultValue="default"/>
+
+    <!-- ── JSON Console Appender (all profiles) ── -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeCallerData>false</includeCallerData>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+            </fieldNames>
+            <customFields>{"app":"${APP_NAME}","profile":"${ACTIVE_PROFILES}"}</customFields>
+
+            <!-- Redact sensitive fields from structured arguments -->
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <defaultMask>[REDACTED]</defaultMask>
+                <path>password</path>
+                <path>password_hash</path>
+                <path>passwordHash</path>
+                <path>token</path>
+                <path>refresh_token</path>
+                <path>refreshToken</path>
+                <path>api_key</path>
+                <path>apiKey</path>
+                <path>secret</path>
+            </jsonGeneratorDecorator>
+        </encoder>
+    </appender>
+
+    <!-- ── Plain Console Appender (dev profile only) ── -->
+    <appender name="PLAIN_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── Dev profile: plain text, DEBUG level ── -->
+    <springProfile name="dev">
+        <logger name="io.k48.fortyeightid" level="DEBUG"/>
+        <root level="INFO">
+            <appender-ref ref="PLAIN_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ── Non-dev profiles: JSON output ── -->
+    <springProfile name="!dev">
+        <logger name="io.k48.fortyeightid" level="INFO"/>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
