@@ -81,6 +81,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(RefreshTokenInvalidException.class)
+    ProblemDetail handleRefreshTokenInvalid(RefreshTokenInvalidException ex) {
+        log.error("Refresh token invalid", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Refresh Token Invalid");
+        problem.setType(URI.create("https://48id.k48.io/errors/refresh-token-invalid"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "REFRESH_TOKEN_INVALID");
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
