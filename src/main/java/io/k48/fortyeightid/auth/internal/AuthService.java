@@ -3,6 +3,7 @@ package io.k48.fortyeightid.auth.internal;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,28 @@ class AuthService {
                 "Bearer",
                 jwtConfig.getAccessTokenExpiry(),
                 userInfo
+        );
+    }
+
+    RefreshResponse refresh(RefreshRequest request) {
+        var result = refreshTokenService.validateAndRotate(request.refreshToken());
+
+        var user = userQueryService.findById(result.userId())
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + result.userId()));
+
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            refreshTokenService.revokeAllForUser(user.getId());
+            throw new DisabledException("Your account has been suspended. Contact K48 administration.");
+        }
+
+        var principal = new UserPrincipal(user);
+        var accessToken = jwtTokenService.generateAccessToken(principal, user);
+
+        return new RefreshResponse(
+                accessToken,
+                result.rawToken(),
+                "Bearer",
+                jwtConfig.getAccessTokenExpiry()
         );
     }
 }

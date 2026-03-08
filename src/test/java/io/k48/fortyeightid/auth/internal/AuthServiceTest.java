@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.RefreshTokenInvalidException;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,5 +107,41 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequest("K48-2024-001", "pass")))
                 .isInstanceOf(DisabledException.class)
                 .hasMessageContaining("activate");
+    }
+
+    @Test
+    void refresh_returnsNewTokens() {
+        var user = activeUser();
+        var result = new RefreshTokenService.RefreshTokenResult(user.getId(), "new-refresh");
+        when(refreshTokenService.validateAndRotate("old-refresh")).thenReturn(result);
+        when(userQueryService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(jwtTokenService.generateAccessToken(any(), any())).thenReturn("new-jwt");
+
+        var response = authService.refresh(new RefreshRequest("old-refresh"));
+
+        assertThat(response.accessToken()).isEqualTo("new-jwt");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void refresh_throwsOnSuspendedUser() {
+        var user = activeUser();
+        user.setStatus(UserStatus.SUSPENDED);
+        var result = new RefreshTokenService.RefreshTokenResult(user.getId(), "new-refresh");
+        when(refreshTokenService.validateAndRotate("token")).thenReturn(result);
+        when(userQueryService.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.refresh(new RefreshRequest("token")))
+                .isInstanceOf(DisabledException.class)
+                .hasMessageContaining("suspended");
+    }
+
+    @Test
+    void refresh_throwsOnInvalidToken() {
+        when(refreshTokenService.validateAndRotate("bad")).thenThrow(new RefreshTokenInvalidException("invalid"));
+
+        assertThatThrownBy(() -> authService.refresh(new RefreshRequest("bad")))
+                .isInstanceOf(RefreshTokenInvalidException.class);
     }
 }
