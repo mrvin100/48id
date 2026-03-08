@@ -91,4 +91,8 @@ class AuthService {
                 jwtConfig.getAccessTokenExpiry()
         );
     }
+
+    void logout(LogoutRequest request) {
+        refreshTokenService.revokeToken(request.refreshToken());
+    }
 }
