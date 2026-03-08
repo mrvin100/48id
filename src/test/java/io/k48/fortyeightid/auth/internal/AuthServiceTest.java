@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.identity.User;
@@ -143,5 +145,14 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.refresh(new RefreshRequest("bad")))
                 .isInstanceOf(RefreshTokenInvalidException.class);
+    }
+
+    @Test
+    void logout_revokesRefreshToken() {
+        doNothing().when(refreshTokenService).revokeToken("some-token");
+
+        authService.logout(new LogoutRequest("some-token"));
+
+        verify(refreshTokenService).revokeToken("some-token");
     }
 }
