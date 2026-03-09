@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-class RefreshTokenService {
+public class RefreshTokenService {
 
     private static final String RT_PREFIX = "rt:";
     private static final String USER_RT_PREFIX = "user_rt:";
@@ -66,7 +66,7 @@ class RefreshTokenService {
         }
     }
 
-    void revokeAllForUser(UUID userId) {
+    public void revokeAllForUser(UUID userId) {
         Set<String> hashes = redisTemplate.opsForSet().members(USER_RT_PREFIX + userId);
         if (hashes != null && !hashes.isEmpty()) {
             var keys = hashes.stream().map(h -> RT_PREFIX + h).toList();

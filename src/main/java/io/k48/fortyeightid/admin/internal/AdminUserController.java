@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.admin.internal;
 
 import jakarta.validation.Valid;
+import io.k48.fortyeightid.identity.UserStatus;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,15 @@ class AdminUserController {
                                             @Valid @RequestBody ChangeRoleRequest request,
                                             @AuthenticationPrincipal String adminId) {
         var updated = adminUserService.changeRole(id, request.role(), UUID.fromString(adminId));
+        return ResponseEntity.ok(UserResponse.from(updated));
+    }
+
+    @PutMapping("/{id}/status")
+    ResponseEntity<UserResponse> changeStatus(@PathVariable UUID id,
+                                              @Valid @RequestBody ChangeStatusRequest request,
+                                              @AuthenticationPrincipal String adminId) {
+        var newStatus = UserStatus.valueOf(request.status());
+        var updated = adminUserService.changeStatus(id, newStatus, UUID.fromString(adminId));
         return ResponseEntity.ok(UserResponse.from(updated));
     }
 }

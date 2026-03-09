@@ -5,17 +5,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.identity.Role;
+import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.identity.UserStatusService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
 import java.util.Map;
@@ -32,7 +32,9 @@ class AdminUserServiceTest {
 
     @Mock private UserQueryService userQueryService;
     @Mock private UserRoleService userRoleService;
+    @Mock private UserStatusService userStatusService;
     @Mock private AuditService auditService;
+    @Mock private TokenRevocationService tokenRevocationService;
 
     @InjectMocks private AdminUserService adminUserService;
 
@@ -83,5 +85,34 @@ class AdminUserServiceTest {
                 .isInstanceOf(CannotPromoteSuspendedUserException.class);
 
         verify(userRoleService, never()).changeRole(any(), anyString());
+    }
+
+    @Test
+    void changeStatus_suspendRevokesTokensAndAudits() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        when(userQueryService.findById(targetId)).thenReturn(Optional.of(user));
+        when(userStatusService.changeStatus(targetId, UserStatus.SUSPENDED)).thenReturn(user);
+
+        adminUserService.changeStatus(targetId, UserStatus.SUSPENDED, adminId);
+
+        verify(tokenRevocationService).revokeAllTokensForUser(targetId);
+        verify(auditService).log(eq(adminId), eq("ACCOUNT_SUSPENDED"), any(Map.class));
+    }
+
+    @Test
+    void changeStatus_activateAuditsWithoutRevokingTokens() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        user.setStatus(UserStatus.SUSPENDED);
+        when(userQueryService.findById(targetId)).thenReturn(Optional.of(user));
+        when(userStatusService.changeStatus(targetId, UserStatus.ACTIVE)).thenReturn(user);
+
+        adminUserService.changeStatus(targetId, UserStatus.ACTIVE, adminId);
+
+        verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
+        verify(auditService).log(eq(adminId), eq("ACCOUNT_REACTIVATED"), any(Map.class));
     }
 }
