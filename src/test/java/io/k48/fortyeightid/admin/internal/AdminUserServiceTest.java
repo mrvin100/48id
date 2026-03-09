@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.PasswordResetService;
 import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -43,6 +44,7 @@ class AdminUserServiceTest {
     @Mock private UserUpdateService userUpdateService;
     @Mock private AuditService auditService;
     @Mock private TokenRevocationService tokenRevocationService;
+    @Mock private PasswordResetService passwordResetService;
 
     @InjectMocks private AdminUserService adminUserService;
 
@@ -217,6 +219,38 @@ class AdminUserServiceTest {
                 .isInstanceOf(UserNotFoundException.class);
 
         verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
+        verify(auditService, never()).log(any(), anyString(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // forcePasswordReset
+    // -------------------------------------------------------------------------
+
+    @Test
+    void forcePasswordReset_revokesTokensSendsEmailAndAudits() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        when(userQueryService.findById(targetId)).thenReturn(Optional.of(user));
+
+        adminUserService.forcePasswordReset(targetId, adminId);
+
+        verify(tokenRevocationService).revokeAllTokensForUser(targetId);
+        verify(passwordResetService).initiatePasswordReset(user);
+        verify(auditService).log(eq(adminId), eq("ADMIN_FORCE_PASSWORD_RESET"), any(Map.class));
+    }
+
+    @Test
+    void forcePasswordReset_throwsWhenUserNotFound() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        when(userQueryService.findById(targetId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminUserService.forcePasswordReset(targetId, adminId))
+                .isInstanceOf(UserNotFoundException.class);
+
+        verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
+        verify(passwordResetService, never()).initiatePasswordReset(any());
         verify(auditService, never()).log(any(), anyString(), any());
     }
 }

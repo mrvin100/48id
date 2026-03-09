@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.admin.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.PasswordResetService;
 import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -32,6 +33,7 @@ class AdminUserService {
     private final UserUpdateService userUpdateService;
     private final AuditService auditService;
     private final TokenRevocationService tokenRevocationService;
+    private final PasswordResetService passwordResetService;
 
     Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable) {
         return userQueryService.findAll(status, batch, role, pageable);
@@ -115,6 +117,19 @@ class AdminUserService {
         }
 
         return result.user();
+    }
+
+    void forcePasswordReset(UUID targetUserId, UUID adminUserId) {
+        var user = userQueryService.findById(targetUserId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));
+
+        tokenRevocationService.revokeAllTokensForUser(targetUserId);
+        passwordResetService.initiatePasswordReset(user);
+
+        auditService.log(adminUserId, "ADMIN_FORCE_PASSWORD_RESET", Map.of(
+                "performedBy", adminUserId.toString(),
+                "targetUser", targetUserId.toString()
+        ));
     }
 
     void softDeleteUser(UUID targetUserId, UUID adminUserId) {
