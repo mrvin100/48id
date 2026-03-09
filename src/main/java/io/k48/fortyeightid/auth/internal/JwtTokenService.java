@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-class JwtTokenService {
+public class JwtTokenService {
 
     private final JwtConfig jwtConfig;
     private final JwtEncoder jwtEncoder;
@@ -66,7 +66,7 @@ class JwtTokenService {
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
-    Jwt validateToken(String token) {
+    public Jwt validateToken(String token) {
         try {
             return jwtDecoder.decode(token);
         } catch (JwtValidationException ex) {
