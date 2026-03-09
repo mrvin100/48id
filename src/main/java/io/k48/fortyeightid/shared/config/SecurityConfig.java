@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,15 +16,22 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Value("${fortyeightid.api.prefix}")
     private String apiPrefix;
 
     private final Filter jwtAuthenticationFilter;
+    private final ProblemDetailAuthenticationEntryPoint authenticationEntryPoint;
+    private final ProblemDetailAccessDeniedHandler accessDeniedHandler;
 
-    public SecurityConfig(@Qualifier("jwtAuthenticationFilter") Filter jwtAuthenticationFilter) {
+    public SecurityConfig(@Qualifier("jwtAuthenticationFilter") Filter jwtAuthenticationFilter,
+                          ProblemDetailAuthenticationEntryPoint authenticationEntryPoint,
+                          ProblemDetailAccessDeniedHandler accessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
@@ -37,6 +45,10 @@ public class SecurityConfig {
                 .requestMatchers("/.well-known/jwks.json").permitAll()
                 .requestMatchers(apiPrefix + "/auth/login", apiPrefix + "/auth/refresh").permitAll()
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
