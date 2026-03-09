@@ -4,9 +4,13 @@ import jakarta.validation.Valid;
 import io.k48.fortyeightid.identity.UserStatus;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,6 +25,17 @@ import org.springframework.web.bind.annotation.RestController;
 class AdminUserController {
 
     private final AdminUserService adminUserService;
+
+    @GetMapping
+    ResponseEntity<Page<UserResponse>> listUsers(
+            @RequestParam(required = false) UserStatus status,
+            @RequestParam(required = false) String batch,
+            @RequestParam(required = false) String role,
+            @PageableDefault(size = 20) Pageable pageable) {
+        var page = adminUserService.listUsers(status, batch, role, pageable)
+                .map(UserResponse::from);
+        return ResponseEntity.ok(page);
+    }
 
     @GetMapping("/{id}")
     ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
