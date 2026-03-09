@@ -80,6 +80,15 @@ public class JwtTokenService {
         }
     }
 
+    public Map<String, Object> getJwkSet() {
+        var rsaKey = new RSAKey.Builder(jwtConfig.getRsaPublicKey())
+                .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
+                .algorithm(com.nimbusds.jose.JWSAlgorithm.RS256)
+                .keyID("48id-key-1")
+                .build();
+        return new JWKSet(rsaKey).toJSONObject();
+    }
+
     Map<String, Object> getClaims(String token) {
         return validateToken(token).getClaims();
     }
