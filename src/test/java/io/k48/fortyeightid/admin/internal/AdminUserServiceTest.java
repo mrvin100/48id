@@ -18,8 +18,10 @@ import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.UserStatusService;
 import io.k48.fortyeightid.identity.UserUpdateService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
+import io.k48.fortyeightid.shared.exception.CannotDeleteOwnAccountException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
 import io.k48.fortyeightid.shared.exception.MatriculeImmutableException;
+import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -171,6 +173,50 @@ class AdminUserServiceTest {
 
         adminUserService.updateUser(targetId, request, adminId);
 
+        verify(auditService, never()).log(any(), anyString(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // softDeleteUser
+    // -------------------------------------------------------------------------
+
+    @Test
+    void softDeleteUser_suspendsUserRevokesTokensAndAudits() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        when(userStatusService.changeStatus(targetId, UserStatus.SUSPENDED)).thenReturn(user);
+
+        adminUserService.softDeleteUser(targetId, adminId);
+
+        verify(userStatusService).changeStatus(targetId, UserStatus.SUSPENDED);
+        verify(tokenRevocationService).revokeAllTokensForUser(targetId);
+        verify(auditService).log(eq(adminId), eq("ACCOUNT_SUSPENDED"), any(Map.class));
+    }
+
+    @Test
+    void softDeleteUser_throwsWhenAdminDeletesOwnAccount() {
+        var id = UUID.randomUUID();
+
+        assertThatThrownBy(() -> adminUserService.softDeleteUser(id, id))
+                .isInstanceOf(CannotDeleteOwnAccountException.class);
+
+        verify(userStatusService, never()).changeStatus(any(), any());
+        verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
+        verify(auditService, never()).log(any(), anyString(), any());
+    }
+
+    @Test
+    void softDeleteUser_throwsWhenUserNotFound() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        when(userStatusService.changeStatus(targetId, UserStatus.SUSPENDED))
+                .thenThrow(new UserNotFoundException("User not found: " + targetId));
+
+        assertThatThrownBy(() -> adminUserService.softDeleteUser(targetId, adminId))
+                .isInstanceOf(UserNotFoundException.class);
+
+        verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
         verify(auditService, never()).log(any(), anyString(), any());
     }
 }

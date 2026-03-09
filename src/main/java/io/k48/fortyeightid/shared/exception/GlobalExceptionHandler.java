@@ -141,6 +141,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(CannotDeleteOwnAccountException.class)
+    ProblemDetail handleCannotDeleteOwnAccount(CannotDeleteOwnAccountException ex) {
+        log.error("Cannot delete own account", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Cannot Delete Own Account");
+        problem.setType(URI.create("https://48id.k48.io/errors/cannot-delete-own-account"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "CANNOT_DELETE_OWN_ACCOUNT");
+        return problem;
+    }
+
     @ExceptionHandler(CannotChangeOwnRoleException.class)
     ProblemDetail handleCannotChangeOwnRole(CannotChangeOwnRoleException ex) {
         log.error("Cannot change own role", ex);

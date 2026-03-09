@@ -9,6 +9,7 @@ import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.UserStatusService;
 import io.k48.fortyeightid.identity.UserUpdateService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
+import io.k48.fortyeightid.shared.exception.CannotDeleteOwnAccountException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
 import io.k48.fortyeightid.shared.exception.MatriculeImmutableException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
@@ -114,5 +115,20 @@ class AdminUserService {
         }
 
         return result.user();
+    }
+
+    void softDeleteUser(UUID targetUserId, UUID adminUserId) {
+        if (targetUserId.equals(adminUserId)) {
+            throw new CannotDeleteOwnAccountException("Admins cannot delete their own account");
+        }
+
+        userStatusService.changeStatus(targetUserId, UserStatus.SUSPENDED);
+        tokenRevocationService.revokeAllTokensForUser(targetUserId);
+
+        auditService.log(adminUserId, "ACCOUNT_SUSPENDED", Map.of(
+                "changedBy", adminUserId.toString(),
+                "targetUser", targetUserId.toString(),
+                "reason", "soft-delete"
+        ));
     }
 }
