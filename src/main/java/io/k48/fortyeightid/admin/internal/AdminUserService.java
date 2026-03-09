@@ -1,10 +1,12 @@
 package io.k48.fortyeightid.admin.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.identity.UserStatusService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
@@ -20,7 +22,9 @@ class AdminUserService {
 
     private final UserQueryService userQueryService;
     private final UserRoleService userRoleService;
+    private final UserStatusService userStatusService;
     private final AuditService auditService;
+    private final TokenRevocationService tokenRevocationService;
 
     User getUser(UUID userId) {
         return userQueryService.findById(userId)
@@ -51,6 +55,33 @@ class AdminUserService {
                 "oldRole", oldRoles,
                 "newRole", newRole
         ));
+
+        return updated;
+    }
+
+    User changeStatus(UUID targetUserId, UserStatus newStatus, UUID adminUserId) {
+        var user = userQueryService.findById(targetUserId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));
+
+        var oldStatus = user.getStatus();
+        var updated = userStatusService.changeStatus(targetUserId, newStatus);
+
+        if (newStatus == UserStatus.SUSPENDED) {
+            tokenRevocationService.revokeAllTokensForUser(targetUserId);
+            auditService.log(adminUserId, "ACCOUNT_SUSPENDED", Map.of(
+                    "changedBy", adminUserId.toString(),
+                    "targetUser", targetUserId.toString(),
+                    "oldStatus", oldStatus.name(),
+                    "newStatus", newStatus.name()
+            ));
+        } else if (newStatus == UserStatus.ACTIVE) {
+            auditService.log(adminUserId, "ACCOUNT_REACTIVATED", Map.of(
+                    "changedBy", adminUserId.toString(),
+                    "targetUser", targetUserId.toString(),
+                    "oldStatus", oldStatus.name(),
+                    "newStatus", newStatus.name()
+            ));
+        }
 
         return updated;
     }
