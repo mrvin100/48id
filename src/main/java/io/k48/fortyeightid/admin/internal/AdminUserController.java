@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -66,5 +67,12 @@ class AdminUserController {
         var newStatus = UserStatus.valueOf(request.status());
         var updated = adminUserService.changeStatus(id, newStatus, UUID.fromString(adminId));
         return ResponseEntity.ok(UserResponse.from(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> softDeleteUser(@PathVariable UUID id,
+                                        @AuthenticationPrincipal String adminId) {
+        adminUserService.softDeleteUser(id, UUID.fromString(adminId));
+        return ResponseEntity.noContent().build();
     }
 }
