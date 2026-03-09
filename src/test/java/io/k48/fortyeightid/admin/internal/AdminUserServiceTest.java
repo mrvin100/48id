@@ -18,9 +18,12 @@ import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.UserStatusService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -114,5 +117,18 @@ class AdminUserServiceTest {
 
         verify(tokenRevocationService, never()).revokeAllTokensForUser(any());
         verify(auditService).log(eq(adminId), eq("ACCOUNT_REACTIVATED"), any(Map.class));
+    }
+
+    @Test
+    void listUsers_delegatesToQueryService() {
+        var pageable = PageRequest.of(0, 20);
+        var user = activeUser(UUID.randomUUID());
+        var page = new PageImpl<>(List.of(user), pageable, 1);
+        when(userQueryService.findAll(UserStatus.ACTIVE, null, null, pageable)).thenReturn(page);
+
+        var result = adminUserService.listUsers(UserStatus.ACTIVE, null, null, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 }

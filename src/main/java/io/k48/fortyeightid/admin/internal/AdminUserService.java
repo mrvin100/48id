@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,6 +27,10 @@ class AdminUserService {
     private final UserStatusService userStatusService;
     private final AuditService auditService;
     private final TokenRevocationService tokenRevocationService;
+
+    Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable) {
+        return userQueryService.findAll(status, batch, role, pageable);
+    }
 
     User getUser(UUID userId) {
         return userQueryService.findById(userId)
