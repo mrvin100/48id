@@ -7,9 +7,12 @@ import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.UserStatusService;
+import io.k48.fortyeightid.identity.UserUpdateService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
+import io.k48.fortyeightid.shared.exception.MatriculeImmutableException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +28,7 @@ class AdminUserService {
     private final UserQueryService userQueryService;
     private final UserRoleService userRoleService;
     private final UserStatusService userStatusService;
+    private final UserUpdateService userUpdateService;
     private final AuditService auditService;
     private final TokenRevocationService tokenRevocationService;
 
@@ -90,5 +94,25 @@ class AdminUserService {
         }
 
         return updated;
+    }
+
+    User updateUser(UUID targetUserId, UpdateUserRequest request, UUID adminUserId) {
+        if (request.matricule() != null) {
+            throw new MatriculeImmutableException("Matricule cannot be changed after account creation");
+        }
+
+        var result = userUpdateService.updateProfile(
+                targetUserId, request.email(), request.name(), request.phone(),
+                request.batch(), request.specialization());
+
+        if (!result.changedFields().isEmpty()) {
+            auditService.log(adminUserId, "ADMIN_USER_UPDATED", Map.of(
+                    "changedBy", adminUserId.toString(),
+                    "targetUser", targetUserId.toString(),
+                    "changedFields", result.changedFields()
+            ));
+        }
+
+        return result.user();
     }
 }

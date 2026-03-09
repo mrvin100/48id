@@ -130,6 +130,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(MatriculeImmutableException.class)
+    ProblemDetail handleMatriculeImmutable(MatriculeImmutableException ex) {
+        log.error("Matricule immutable", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Matricule Immutable");
+        problem.setType(URI.create("https://48id.k48.io/errors/matricule-immutable"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "MATRICULE_IMMUTABLE");
+        return problem;
+    }
+
     @ExceptionHandler(CannotChangeOwnRoleException.class)
     ProblemDetail handleCannotChangeOwnRole(CannotChangeOwnRoleException ex) {
         log.error("Cannot change own role", ex);

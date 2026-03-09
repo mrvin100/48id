@@ -16,8 +16,10 @@ import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.UserStatusService;
+import io.k48.fortyeightid.identity.UserUpdateService;
 import io.k48.fortyeightid.shared.exception.CannotChangeOwnRoleException;
 import io.k48.fortyeightid.shared.exception.CannotPromoteSuspendedUserException;
+import io.k48.fortyeightid.shared.exception.MatriculeImmutableException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +38,7 @@ class AdminUserServiceTest {
     @Mock private UserQueryService userQueryService;
     @Mock private UserRoleService userRoleService;
     @Mock private UserStatusService userStatusService;
+    @Mock private UserUpdateService userUpdateService;
     @Mock private AuditService auditService;
     @Mock private TokenRevocationService tokenRevocationService;
 
@@ -130,5 +133,44 @@ class AdminUserServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void updateUser_updatesFieldsAndAudits() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        var request = new UpdateUserRequest(null, null, "New Name", "+237600000001", null, null);
+        when(userUpdateService.updateProfile(targetId, null, "New Name", "+237600000001", null, null))
+                .thenReturn(new UserUpdateService.UpdateResult(user, List.of("name", "phone")));
+
+        var result = adminUserService.updateUser(targetId, request, adminId);
+
+        assertThat(result).isEqualTo(user);
+        verify(auditService).log(eq(adminId), eq("ADMIN_USER_UPDATED"), any(Map.class));
+    }
+
+    @Test
+    void updateUser_throwsWhenMatriculeProvided() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var request = new UpdateUserRequest("K48-NEW", null, null, null, null, null);
+
+        assertThatThrownBy(() -> adminUserService.updateUser(targetId, request, adminId))
+                .isInstanceOf(MatriculeImmutableException.class);
+    }
+
+    @Test
+    void updateUser_skipsAuditWhenNoChanges() {
+        var targetId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+        var user = activeUser(targetId);
+        var request = new UpdateUserRequest(null, null, null, null, null, null);
+        when(userUpdateService.updateProfile(targetId, null, null, null, null, null))
+                .thenReturn(new UserUpdateService.UpdateResult(user, List.of()));
+
+        adminUserService.updateUser(targetId, request, adminId);
+
+        verify(auditService, never()).log(any(), anyString(), any());
     }
 }
