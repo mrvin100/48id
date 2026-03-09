@@ -130,6 +130,28 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(CannotChangeOwnRoleException.class)
+    ProblemDetail handleCannotChangeOwnRole(CannotChangeOwnRoleException ex) {
+        log.error("Cannot change own role", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Cannot Change Own Role");
+        problem.setType(URI.create("https://48id.k48.io/errors/cannot-change-own-role"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "CANNOT_CHANGE_OWN_ROLE");
+        return problem;
+    }
+
+    @ExceptionHandler(CannotPromoteSuspendedUserException.class)
+    ProblemDetail handleCannotPromoteSuspended(CannotPromoteSuspendedUserException ex) {
+        log.error("Cannot promote suspended user", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Cannot Promote Suspended User");
+        problem.setType(URI.create("https://48id.k48.io/errors/cannot-promote-suspended-user"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "CANNOT_PROMOTE_SUSPENDED_USER");
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
