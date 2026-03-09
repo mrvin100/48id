@@ -22,6 +22,11 @@ class AdminUserService {
     private final UserRoleService userRoleService;
     private final AuditService auditService;
 
+    User getUser(UUID userId) {
+        return userQueryService.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
+    }
+
     User changeRole(UUID targetUserId, String newRole, UUID adminUserId) {
         if (targetUserId.equals(adminUserId)) {
             throw new CannotChangeOwnRoleException("Admins cannot change their own role");
