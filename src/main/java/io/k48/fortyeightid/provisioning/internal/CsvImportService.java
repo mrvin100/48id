@@ -32,6 +32,12 @@ class CsvImportService {
             "matricule", "email", "name", "phone", "batch", "specialization");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    String generateTemplate() {
+        var header = String.join(",", EXPECTED_HEADER);
+        var exampleRow = "K48-2024-001,john.doe@k48.io,John Doe,+237600000000,2024,Software Engineering";
+        return header + "\n" + exampleRow + "\n";
+    }
+
     private final UserProvisioningPort userProvisioningService;
     private final EmailPort emailService;
     private final AuditService auditService;
