@@ -132,8 +132,10 @@ class CsvImportServiceTest {
         var adminId = UUID.randomUUID();
 
         assertThatThrownBy(() -> csvImportService.importUsers(file, adminId))
-                .isInstanceOf(CsvImportService.CsvImportException.class)
-                .hasMessageContaining("CSV_NO_DATA_ROWS");
+                .isInstanceOfSatisfying(CsvImportService.CsvImportException.class, ex -> {
+                    assertThat(ex.getErrorCode()).isEqualTo("CSV_NO_DATA_ROWS");
+                    assertThat(ex.getMessage()).contains("no data rows");
+                });
 
         verify(userProvisioningService, never()).createUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
@@ -143,7 +145,9 @@ class CsvImportServiceTest {
         var adminId = UUID.randomUUID();
 
         assertThatThrownBy(() -> csvImportService.importUsers(null, adminId))
-                .isInstanceOf(CsvImportService.CsvImportException.class)
-                .hasMessageContaining("INVALID_FILE_FORMAT");
+                .isInstanceOfSatisfying(CsvImportService.CsvImportException.class, ex -> {
+                    assertThat(ex.getErrorCode()).isEqualTo("INVALID_FILE_FORMAT");
+                    assertThat(ex.getMessage()).contains("empty or missing");
+                });
     }
 }

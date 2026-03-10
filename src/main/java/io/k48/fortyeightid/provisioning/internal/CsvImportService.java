@@ -28,6 +28,8 @@ class CsvImportService {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final List<String> EXPECTED_HEADER = List.of(
+            "matricule", "email", "name", "phone", "batch", "specialization");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserProvisioningPort userProvisioningService;
@@ -55,9 +57,16 @@ class CsvImportService {
         if (file == null || file.isEmpty()) {
             throw new CsvImportException("INVALID_FILE_FORMAT", "File is empty or missing");
         }
-        
+
         var contentType = file.getContentType();
-        if (contentType != null && !contentType.contains("csv") && !contentType.contains("text")) {
+        var filename = file.getOriginalFilename();
+        var looksLikeCsvByMime = contentType == null
+                || contentType.contains("csv")
+                || contentType.contains("text")
+                || contentType.contains("application/vnd.ms-excel");
+        var looksLikeCsvByName = filename != null && filename.toLowerCase().endsWith(".csv");
+
+        if (!looksLikeCsvByMime && !looksLikeCsvByName) {
             throw new CsvImportException("INVALID_FILE_FORMAT", "File must be a CSV file");
         }
     }
@@ -69,6 +78,8 @@ class CsvImportService {
             if (allRows.isEmpty()) {
                 throw new CsvImportException("CSV_NO_DATA_ROWS", "CSV file is empty");
             }
+
+            validateHeader(allRows.get(0));
 
             // Skip header row and process all data rows
             var rows = new ArrayList<CsvRow>();
@@ -156,10 +167,34 @@ class CsvImportService {
         if (row.name() == null || row.name().isBlank()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: name");
         }
+        if (row.phone() == null || row.phone().isBlank()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: phone");
+        }
+        if (row.batch() == null || row.batch().isBlank()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: batch");
+        }
+        if (row.specialization() == null || row.specialization().isBlank()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: specialization");
+        }
         if (!EMAIL_PATTERN.matcher(row.email()).matches()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_EMAIL_FORMAT");
         }
         return null;
+    }
+
+    private void validateHeader(String[] headerRow) {
+        if (headerRow.length != EXPECTED_HEADER.size()) {
+            throw new CsvImportException("INVALID_CSV_HEADER",
+                    "CSV header must be exactly: matricule,email,name,phone,batch,specialization");
+        }
+
+        for (int i = 0; i < EXPECTED_HEADER.size(); i++) {
+            var actual = headerRow[i] == null ? "" : headerRow[i].trim();
+            if (!EXPECTED_HEADER.get(i).equals(actual)) {
+                throw new CsvImportException("INVALID_CSV_HEADER",
+                        "CSV header must be exactly: matricule,email,name,phone,batch,specialization");
+            }
+        }
     }
 
     private String generateTemporaryPassword() {
