@@ -3,7 +3,7 @@ package io.k48.fortyeightid.provisioning.internal;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.internal.EmailService;
+import io.k48.fortyeightid.auth.EmailPort;
 import io.k48.fortyeightid.identity.UserProvisioningService;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
@@ -31,7 +31,7 @@ class CsvImportService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserProvisioningService userProvisioningService;
-    private final EmailService emailService;
+    private final EmailPort emailService;
     private final AuditService auditService;
 
     CsvImportResult importUsers(MultipartFile file, UUID adminId) {

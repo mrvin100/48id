@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.internal.EmailService;
+import io.k48.fortyeightid.auth.EmailPort;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserProvisioningService;
 import io.k48.fortyeightid.identity.UserStatus;
@@ -28,7 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 class CsvImportServiceTest {
 
     @Mock private UserProvisioningService userProvisioningService;
-    @Mock private EmailService emailService;
+    @Mock private EmailPort emailService;
     @Mock private AuditService auditService;
     @InjectMocks private CsvImportService csvImportService;
 
