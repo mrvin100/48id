@@ -23,6 +23,9 @@ class EmailService implements EmailPort {
     @Value("${fortyeightid.mail.reset-password-url:http://localhost:3000/reset-password}")
     private String resetPasswordBaseUrl;
 
+    @Value("${fortyeightid.mail.login-url:http://localhost:3000/login}")
+    private String loginUrl;
+
     @Override
     @Async
     public void sendActivationEmail(String toEmail, String userName, String matricule, String temporaryPassword) {
@@ -47,7 +50,7 @@ class EmailService implements EmailPort {
                     If you did not expect this account, please contact K48 administration immediately.
 
                     — K48 ID Team
-                    """.formatted(userName, matricule, temporaryPassword, resetPasswordBaseUrl.replace("/reset-password", "/login")));
+                    """.formatted(userName, matricule, temporaryPassword, loginUrl));
             mailSender.send(message);
             log.info("Activation email sent to {}", toEmail);
         } catch (MailException ex) {

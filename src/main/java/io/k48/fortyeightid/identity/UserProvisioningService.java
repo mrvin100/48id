@@ -1,5 +1,7 @@
 package io.k48.fortyeightid.identity;
 
+import io.k48.fortyeightid.identity.internal.RoleRepository;
+import io.k48.fortyeightid.identity.internal.UserRepository;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import lombok.RequiredArgsConstructor;
