@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import io.k48.fortyeightid.auth.ApiKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ApiKeyServiceTest {
 
     @Mock private ApiKeyRepository apiKeyRepository;
+    @Mock private io.k48.fortyeightid.audit.AuditService auditService;
     @InjectMocks private ApiKeyService apiKeyService;
 
     private String sha256(String input) throws Exception {

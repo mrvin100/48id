@@ -1,6 +1,5 @@
 package io.k48.fortyeightid.auth;
 
-import io.k48.fortyeightid.auth.internal.ApiKeyService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +18,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "X-API-Key";
 
-    private final ApiKeyService apiKeyService;
+    private final ApiKeyManagementPort apiKeyService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -42,6 +41,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             var key = validKey.get();
             var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // Update lastUsedAt timestamp
+            apiKeyService.updateLastUsed(key);
         } else {
             log.debug("Invalid API key presented");
         }

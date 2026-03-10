@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.auth;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,6 +28,9 @@ public class ApiKey {
     @Column(name = "app_name", nullable = false, length = 100)
     private String appName;
 
+    @Column(length = 500)
+    private String description;
+
     @Column(name = "key_hash", nullable = false, unique = true, length = 64)
     private String keyHash;
 
@@ -39,6 +42,13 @@ public class ApiKey {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
+    @Column(name = "last_used_at")
+    private Instant lastUsedAt;
+
     @Column(name = "expires_at")
     private Instant expiresAt;
+
+    public void updateLastUsed() {
+        this.lastUsedAt = Instant.now();
+    }
 }

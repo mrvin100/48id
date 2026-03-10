@@ -1,25 +1,87 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.ApiKey;
+import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ApiKeyService {
+class ApiKeyService implements ApiKeyManagementPort {
 
     private final ApiKeyRepository apiKeyRepository;
+    private final AuditService auditService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
+    @Override
     public Optional<ApiKey> validate(String rawKey) {
         var hash = sha256(rawKey);
         return apiKeyRepository.findByKeyHash(hash)
                 .filter(ApiKey::isActive)
                 .filter(key -> key.getExpiresAt() == null || key.getExpiresAt().isAfter(Instant.now()));
+    }
+
+    @Override
+    @Transactional
+    public ApiKeyCreationResult createApiKey(String appName, String description, UUID createdBy) {
+        var rawKey = generateSecureKey();
+        var hash = sha256(rawKey);
+
+        var apiKey = ApiKey.builder()
+                .appName(appName)
+                .description(description)
+                .keyHash(hash)
+                .build();
+
+        var saved = apiKeyRepository.save(apiKey);
+
+        auditService.log(createdBy, "API_KEY_CREATED", Map.of(
+                "apiKeyId", saved.getId().toString(),
+                "appName", appName
+        ));
+
+        return new ApiKeyCreationResult(rawKey, saved);
+    }
+
+    @Override
+    public List<ApiKey> listAll() {
+        return apiKeyRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public void revokeApiKey(UUID apiKeyId, UUID revokedBy) {
+        apiKeyRepository.deleteById(apiKeyId);
+
+        auditService.log(revokedBy, "API_KEY_REVOKED", Map.of(
+                "apiKeyId", apiKeyId.toString()
+        ));
+    }
+
+    @Override
+    @Transactional
+    public void updateLastUsed(ApiKey apiKey) {
+        apiKey.updateLastUsed();
+        apiKeyRepository.save(apiKey);
+    }
+
+    private String generateSecureKey() {
+        var bytes = new byte[32]; // 256 bits
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private String sha256(String input) {
