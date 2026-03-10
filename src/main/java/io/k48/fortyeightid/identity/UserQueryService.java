@@ -50,4 +50,8 @@ public class UserQueryService {
         };
         return userRepository.findAll(spec, pageable);
     }
+
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 }

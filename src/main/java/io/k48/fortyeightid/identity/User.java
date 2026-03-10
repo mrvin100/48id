@@ -73,6 +73,10 @@ public class User {
     @Builder.Default
     private boolean profileCompleted = false;
 
+    @Column(name = "requires_password_change", nullable = false)
+    @Builder.Default
+    private boolean requiresPasswordChange = true;
+
     @Column(name = "last_login_at")
     private OffsetDateTime lastLoginAt;
 

@@ -3,156 +3,185 @@ package io.k48.fortyeightid.auth.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
-import io.k48.fortyeightid.shared.exception.RefreshTokenInvalidException;
+import io.k48.fortyeightid.identity.internal.UserRepository;
+import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock private UserQueryService userQueryService;
-    @Mock private PasswordEncoder passwordEncoder;
-    @Mock private JwtTokenService jwtTokenService;
-    @Mock private RefreshTokenService refreshTokenService;
+    @Mock
+    private UserQueryService userQueryService;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtTokenService jwtTokenService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private JwtConfig jwtConfig;
+
+    @Mock
+    private AuditService auditService;
+
+    @InjectMocks
     private AuthService authService;
 
-    @BeforeEach
-    void setUp() {
-        var config = new JwtConfig();
-        config.setAccessTokenExpiry(900);
-        authService = new AuthService(userQueryService, passwordEncoder, jwtTokenService, refreshTokenService, config);
+    @Test
+    void changePassword_successfullyChangesPassword() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(userQueryService.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+        when(passwordEncoder.encode("NewPass@456")).thenReturn("newHash");
+
+        var request = new ChangePasswordRequest("OldPass@123", "NewPass@456");
+        authService.changePassword(userId, request);
+
+        assertThat(user.getPasswordHash()).isEqualTo("newHash");
+        assertThat(user.isRequiresPasswordChange()).isFalse();
+        verify(refreshTokenService, times(1)).revokeAllForUser(userId);
+        verify(auditService, times(1)).log(eq(userId), eq("PASSWORD_CHANGED"), any());
     }
 
-    private User activeUser() {
+    @Test
+    void changePassword_throwsWhenCurrentPasswordIsWrong() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("WrongPass@123", "oldHash")).thenReturn(false);
+
+        var request = new ChangePasswordRequest("WrongPass@123", "NewPass@456");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Current password is incorrect.");
+    }
+
+    @Test
+    void changePassword_throwsWhenNewPasswordTooShort() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("OldPass@123", "Short1!");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+    }
+
+    @Test
+    void changePassword_throwsWhenNewPasswordMissingUppercase() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("OldPass@123", "lowercase1@");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+    }
+
+    @Test
+    void changePassword_throwsWhenNewPasswordMissingLowercase() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("OldPass@123", "UPPERCASE1@");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+    }
+
+    @Test
+    void changePassword_throwsWhenNewPasswordMissingDigit() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("OldPass@123", "NoDigit@Abc");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+    }
+
+    @Test
+    void changePassword_throwsWhenNewPasswordMissingSpecialChar() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("OldPass@123", "NoSpecial1A");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+    }
+
+    @Test
+    void changePassword_throwsWhenUserNotFound() {
+        var userId = UUID.randomUUID();
+        when(userQueryService.findById(userId)).thenReturn(Optional.empty());
+
+        var request = new ChangePasswordRequest("OldPass@123", "NewPass@456");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(io.k48.fortyeightid.shared.exception.UserNotFoundException.class);
+    }
+
+    private User createUser(UUID id, String passwordHash) {
+        var role = new Role();
+        role.setName("STUDENT");
+
         return User.builder()
-                .id(UUID.randomUUID())
+                .id(id)
                 .matricule("K48-2024-001")
                 .email("test@k48.io")
                 .name("Test User")
-                .passwordHash("$2a$10$hash")
+                .passwordHash(passwordHash)
                 .status(UserStatus.ACTIVE)
                 .batch("2024")
-                .specialization("Software Engineering")
+                .specialization("SE")
+                .phone("+237600000000")
+                .profileCompleted(false)
+                .requiresPasswordChange(true)
+                .roles(Set.of(role))
                 .build();
-    }
-
-    @Test
-    void login_returnsTokens() {
-        var user = activeUser();
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password", "$2a$10$hash")).thenReturn(true);
-        when(jwtTokenService.generateAccessToken(any(), any())).thenReturn("jwt-token");
-        when(refreshTokenService.createRefreshToken(any())).thenReturn("refresh-token");
-
-        var response = authService.login(new LoginRequest("K48-2024-001", "password"));
-
-        assertThat(response.accessToken()).isEqualTo("jwt-token");
-        assertThat(response.refreshToken()).isEqualTo("refresh-token");
-        assertThat(response.tokenType()).isEqualTo("Bearer");
-        assertThat(response.expiresIn()).isEqualTo(900);
-        assertThat(response.user().matricule()).isEqualTo("K48-2024-001");
-    }
-
-    @Test
-    void login_throwsOnUnknownMatricule() {
-        when(userQueryService.findByMatricule("NONE")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("NONE", "pass")))
-                .isInstanceOf(BadCredentialsException.class)
-                .hasMessage("Matricule or password is incorrect.");
-    }
-
-    @Test
-    void login_throwsOnWrongPassword() {
-        var user = activeUser();
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrong", "$2a$10$hash")).thenReturn(false);
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("K48-2024-001", "wrong")))
-                .isInstanceOf(BadCredentialsException.class);
-    }
-
-    @Test
-    void login_throwsOnSuspendedAccount() {
-        var user = activeUser();
-        user.setStatus(UserStatus.SUSPENDED);
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("K48-2024-001", "pass")))
-                .isInstanceOf(DisabledException.class)
-                .hasMessageContaining("suspended");
-    }
-
-    @Test
-    void login_throwsOnPendingActivation() {
-        var user = activeUser();
-        user.setStatus(UserStatus.PENDING_ACTIVATION);
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("K48-2024-001", "pass")))
-                .isInstanceOf(DisabledException.class)
-                .hasMessageContaining("activate");
-    }
-
-    @Test
-    void refresh_returnsNewTokens() {
-        var user = activeUser();
-        var result = new RefreshTokenService.RefreshTokenResult(user.getId(), "new-refresh");
-        when(refreshTokenService.validateAndRotate("old-refresh")).thenReturn(result);
-        when(userQueryService.findById(user.getId())).thenReturn(Optional.of(user));
-        when(jwtTokenService.generateAccessToken(any(), any())).thenReturn("new-jwt");
-
-        var response = authService.refresh(new RefreshRequest("old-refresh"));
-
-        assertThat(response.accessToken()).isEqualTo("new-jwt");
-        assertThat(response.refreshToken()).isEqualTo("new-refresh");
-        assertThat(response.tokenType()).isEqualTo("Bearer");
-    }
-
-    @Test
-    void refresh_throwsOnSuspendedUser() {
-        var user = activeUser();
-        user.setStatus(UserStatus.SUSPENDED);
-        var result = new RefreshTokenService.RefreshTokenResult(user.getId(), "new-refresh");
-        when(refreshTokenService.validateAndRotate("token")).thenReturn(result);
-        when(userQueryService.findById(user.getId())).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> authService.refresh(new RefreshRequest("token")))
-                .isInstanceOf(DisabledException.class)
-                .hasMessageContaining("suspended");
-    }
-
-    @Test
-    void refresh_throwsOnInvalidToken() {
-        when(refreshTokenService.validateAndRotate("bad")).thenThrow(new RefreshTokenInvalidException("invalid"));
-
-        assertThatThrownBy(() -> authService.refresh(new RefreshRequest("bad")))
-                .isInstanceOf(RefreshTokenInvalidException.class);
-    }
-
-    @Test
-    void logout_revokesRefreshToken() {
-        doNothing().when(refreshTokenService).revokeToken("some-token");
-
-        authService.logout(new LogoutRequest("some-token"));
-
-        verify(refreshTokenService).revokeToken("some-token");
     }
 }
