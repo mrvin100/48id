@@ -7,6 +7,7 @@ record LoginResponse(
         @JsonProperty("refresh_token") String refreshToken,
         @JsonProperty("token_type") String tokenType,
         @JsonProperty("expires_in") long expiresIn,
+        @JsonProperty("requires_password_change") boolean requiresPasswordChange,
         UserInfo user
 ) {
     record UserInfo(

@@ -1,9 +1,11 @@
 package io.k48.fortyeightid.auth.internal;
 
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,5 +32,13 @@ class AuthController {
     ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PostMapping("/change-password")
+    ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(UUID.fromString(userId), request);
+        return ResponseEntity.ok().build();
     }
 }

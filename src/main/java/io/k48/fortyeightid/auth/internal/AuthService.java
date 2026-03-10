@@ -1,9 +1,14 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,11 +22,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 class AuthService {
 
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    );
+
     private final UserQueryService userQueryService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final RefreshTokenService refreshTokenService;
     private final JwtConfig jwtConfig;
+    private final AuditService auditService;
 
     LoginResponse login(LoginRequest request) {
         var userOpt = userQueryService.findByMatricule(request.matricule());
@@ -66,6 +76,7 @@ class AuthService {
                 refreshToken,
                 "Bearer",
                 jwtConfig.getAccessTokenExpiry(),
+                user.isRequiresPasswordChange(),
                 userInfo
         );
     }
@@ -94,5 +105,42 @@ class AuthService {
 
     void logout(LogoutRequest request) {
         refreshTokenService.revokeToken(request.refreshToken());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    void changePassword(UUID userId, ChangePasswordRequest request) {
+        var user = userQueryService.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
+
+        // Validate current password
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadCredentialsException("Current password is incorrect.");
+        }
+
+        // Validate new password against password policy
+        validatePasswordPolicy(request.newPassword());
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setRequiresPasswordChange(false);
+        userQueryService.save(user);
+
+        // Revoke all refresh tokens to force re-login with new password
+        refreshTokenService.revokeAllForUser(userId);
+
+        // Log audit event
+        auditService.log(userId, "PASSWORD_CHANGED", Map.of(
+                "userId", userId.toString(),
+                "message", "User changed their password"
+        ));
+    }
+
+    private void validatePasswordPolicy(String password) {
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new PasswordPolicyViolationException(
+                    "Password must be at least 8 characters long and contain at least one uppercase letter, " +
+                    "one lowercase letter, one digit, and one special character (@$!%*?&)."
+            );
+        }
     }
 }
