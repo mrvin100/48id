@@ -125,6 +125,36 @@ class UserServiceTest {
                 .isInstanceOf(UserNotFoundException.class);
     }
 
+    @Test
+    void updateProfile_doesNotSetProfileCompletedWithoutName() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
+        user.setName(null);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest("+237600000001", "Data Science");
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.isProfileCompleted()).isFalse();
+    }
+
+    @Test
+    void updateProfile_doesNotSetProfileCompletedWithBlankName() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
+        user.setName("  ");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest("+237600000001", "Data Science");
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.isProfileCompleted()).isFalse();
+    }
+
     private User createUser(UUID id, String matricule, boolean profileCompleted) {
         var role = new Role();
         role.setName("STUDENT");
