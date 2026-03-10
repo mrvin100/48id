@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -40,5 +41,11 @@ class AuthController {
             @Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(UUID.fromString(userId), request);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/forgot-password")
+    ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.handleForgotPassword(request.email());
+        return ResponseEntity.ok(new ForgotPasswordResponse("If this email is registered, a password reset link has been sent."));
     }
 }

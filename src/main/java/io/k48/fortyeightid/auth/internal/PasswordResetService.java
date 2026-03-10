@@ -1,9 +1,12 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.EmailPort;
 import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserQueryService;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,8 @@ class PasswordResetService implements PasswordResetPort {
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailPort emailService;
+    private final UserQueryService userQueryService;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -39,5 +44,22 @@ class PasswordResetService implements PasswordResetPort {
         emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), rawToken);
 
         log.info("Password reset initiated for user {}", user.getId());
+    }
+
+    @Transactional
+    public void handleForgotPassword(String email) {
+        var userOpt = userQueryService.findByEmail(email);
+
+        if (userOpt.isPresent()) {
+            var user = userOpt.get();
+            initiatePasswordReset(user);
+
+            auditService.log(user.getId(), "PASSWORD_RESET_REQUESTED", Map.of(
+                    "email", email,
+                    "userId", user.getId().toString()
+            ));
+        } else {
+            log.info("Password reset requested for non-existent email: {}", email);
+        }
     }
 }
