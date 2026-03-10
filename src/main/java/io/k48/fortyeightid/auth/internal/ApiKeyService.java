@@ -1,4 +1,4 @@
-﻿package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
@@ -25,6 +25,7 @@ class ApiKeyService implements ApiKeyManagementPort {
     private final AuditService auditService;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @Override
     public Optional<ApiKey> validate(String rawKey) {
         var hash = sha256(rawKey);
         return apiKeyRepository.findByKeyHash(hash)
@@ -32,6 +33,7 @@ class ApiKeyService implements ApiKeyManagementPort {
                 .filter(key -> key.getExpiresAt() == null || key.getExpiresAt().isAfter(Instant.now()));
     }
 
+    @Override
     @Transactional
     public ApiKeyCreationResult createApiKey(String appName, String description, UUID createdBy) {
         var rawKey = generateSecureKey();
@@ -53,10 +55,12 @@ class ApiKeyService implements ApiKeyManagementPort {
         return new ApiKeyCreationResult(rawKey, saved);
     }
 
+    @Override
     public List<ApiKey> listAll() {
         return apiKeyRepository.findAll();
     }
 
+    @Override
     @Transactional
     public void revokeApiKey(UUID apiKeyId, UUID revokedBy) {
         apiKeyRepository.deleteById(apiKeyId);
@@ -66,6 +70,7 @@ class ApiKeyService implements ApiKeyManagementPort {
         ));
     }
 
+    @Override
     @Transactional
     public void updateLastUsed(ApiKey apiKey) {
         apiKey.updateLastUsed();
@@ -87,6 +92,4 @@ class ApiKeyService implements ApiKeyManagementPort {
             throw new IllegalStateException("SHA-256 not available", e);
         }
     }
-
-    public record ApiKeyCreationResult(String rawKey, ApiKey apiKey) {}
 }
