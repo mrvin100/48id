@@ -28,6 +28,10 @@ public class UserQueryService {
         return userRepository.findById(id);
     }
 
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
     public User getByMatricule(String matricule) {
         return userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + matricule));
