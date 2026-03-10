@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.k48.fortyeightid.auth.EmailPort;
 import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.identity.User;
 import java.time.Instant;
@@ -17,7 +18,7 @@ class PasswordResetService implements PasswordResetPort {
     private static final long RESET_TOKEN_TTL_SECONDS = 3600; // 1 hour
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final EmailService emailService;
+    private final EmailPort emailService;
 
     @Override
     @Transactional
