@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.PasswordResetService;
+import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -44,7 +44,7 @@ class AdminUserServiceTest {
     @Mock private UserUpdateService userUpdateService;
     @Mock private AuditService auditService;
     @Mock private TokenRevocationService tokenRevocationService;
-    @Mock private PasswordResetService passwordResetService;
+    @Mock private PasswordResetPort passwordResetService;
 
     @InjectMocks private AdminUserService adminUserService;
 

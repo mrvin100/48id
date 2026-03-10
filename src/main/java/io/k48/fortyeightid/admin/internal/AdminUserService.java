@@ -1,7 +1,7 @@
 package io.k48.fortyeightid.admin.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.PasswordResetService;
+import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -33,7 +33,7 @@ class AdminUserService {
     private final UserUpdateService userUpdateService;
     private final AuditService auditService;
     private final TokenRevocationService tokenRevocationService;
-    private final PasswordResetService passwordResetService;
+    private final PasswordResetPort passwordResetService;
 
     Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable) {
         return userQueryService.findAll(status, batch, role, pageable);

@@ -1,8 +1,6 @@
-package io.k48.fortyeightid.auth;
+package io.k48.fortyeightid.auth.internal;
 
-import io.k48.fortyeightid.auth.internal.EmailService;
-import io.k48.fortyeightid.auth.internal.PasswordResetToken;
-import io.k48.fortyeightid.auth.internal.PasswordResetTokenRepository;
+import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.identity.User;
 import java.time.Instant;
 import java.util.UUID;
@@ -14,21 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PasswordResetService {
+class PasswordResetService implements PasswordResetPort {
 
     private static final long RESET_TOKEN_TTL_SECONDS = 3600; // 1 hour
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
 
-    /**
-     * Generates a password reset token for the given user, persists it,
-     * and dispatches the reset email asynchronously.
-     * All existing tokens for the user are invalidated first.
-     */
+    @Override
     @Transactional
     public void initiatePasswordReset(User user) {
-        // Invalidate any existing tokens for this user
         passwordResetTokenRepository.deleteAllByUserId(user.getId());
 
         var rawToken = UUID.randomUUID().toString();
@@ -42,7 +35,6 @@ public class PasswordResetService {
 
         passwordResetTokenRepository.save(resetToken);
 
-        // Send email asynchronously — failure is logged but does not fail this call
         emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), rawToken);
 
         log.info("Password reset initiated for user {}", user.getId());
