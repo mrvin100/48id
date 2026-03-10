@@ -3,7 +3,6 @@ package io.k48.fortyeightid.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.auth.internal.ApiKey;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

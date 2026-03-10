@@ -1,6 +1,5 @@
 package io.k48.fortyeightid.auth;
 
-import io.k48.fortyeightid.auth.internal.ApiKey;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

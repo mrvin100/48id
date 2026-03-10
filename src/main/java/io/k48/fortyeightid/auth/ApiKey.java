@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.auth;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

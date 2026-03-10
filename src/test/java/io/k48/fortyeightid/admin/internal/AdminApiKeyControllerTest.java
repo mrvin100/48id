@@ -6,9 +6,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort.ApiKeyCreationResult;
-import io.k48.fortyeightid.auth.internal.ApiKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
