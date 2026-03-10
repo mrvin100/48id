@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.admin.internal;
 
 import java.time.Instant;
 

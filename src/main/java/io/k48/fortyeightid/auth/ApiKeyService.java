@@ -1,6 +1,8 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.auth;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.internal.ApiKey;
+import io.k48.fortyeightid.auth.internal.ApiKeyRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

@@ -1,6 +1,4 @@
 package io.k48.fortyeightid.auth;
-
-import io.k48.fortyeightid.auth.internal.ApiKeyService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

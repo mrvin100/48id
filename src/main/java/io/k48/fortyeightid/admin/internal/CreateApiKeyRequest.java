@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.admin.internal;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

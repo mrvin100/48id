@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.admin.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -6,7 +6,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.auth.internal.ApiKeyService.ApiKeyCreationResult;
+import io.k48.fortyeightid.auth.ApiKeyService;
+import io.k48.fortyeightid.auth.ApiKeyService.ApiKeyCreationResult;
+import io.k48.fortyeightid.auth.internal.ApiKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

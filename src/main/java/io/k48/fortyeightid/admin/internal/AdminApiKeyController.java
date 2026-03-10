@@ -1,5 +1,6 @@
-package io.k48.fortyeightid.auth.internal;
+package io.k48.fortyeightid.admin.internal;
 
+import io.k48.fortyeightid.auth.ApiKeyService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
