@@ -70,21 +70,21 @@ class CsvImportService {
                 throw new CsvImportException("CSV_NO_DATA_ROWS", "CSV file is empty");
             }
 
-            // Skip header row
+            // Skip header row and process all data rows
             var rows = new ArrayList<CsvRow>();
             for (int i = 1; i < allRows.size(); i++) {
                 var row = allRows.get(i);
-                if (row.length >= 6) {
-                    rows.add(new CsvRow(
-                            i + 1, // Row number (1-indexed, accounting for header)
-                            row[0].trim(),
-                            row[1].trim(),
-                            row[2].trim(),
-                            row.length > 3 ? row[3].trim() : "",
-                            row.length > 4 ? row[4].trim() : "",
-                            row.length > 5 ? row[5].trim() : ""
-                    ));
-                }
+                // Always add the row with safe defaults for missing columns
+                // validateRow() will report missing required fields
+                rows.add(new CsvRow(
+                        i + 1, // Row number (1-indexed, accounting for header)
+                        row.length > 0 ? row[0].trim() : "",
+                        row.length > 1 ? row[1].trim() : "",
+                        row.length > 2 ? row[2].trim() : "",
+                        row.length > 3 ? row[3].trim() : "",
+                        row.length > 4 ? row[4].trim() : "",
+                        row.length > 5 ? row[5].trim() : ""
+                ));
             }
             
             return rows;

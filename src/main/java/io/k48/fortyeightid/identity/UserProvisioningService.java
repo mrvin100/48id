@@ -7,6 +7,7 @@ import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Public facade for cross-module user provisioning (e.g. CSV import).
@@ -25,6 +26,7 @@ public class UserProvisioningService {
      * @throws DuplicateMatriculeException if matricule already exists
      * @throws DuplicateEmailException     if email already exists
      */
+    @Transactional
     public User createUser(String matricule, String email, String name,
                            String phone, String batch, String specialization,
                            String rawPassword) {

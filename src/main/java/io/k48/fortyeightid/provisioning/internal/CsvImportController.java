@@ -25,8 +25,22 @@ class CsvImportController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal String adminId) {
         
+        // CsvImportException is intentionally handled here to return CsvImportResult format
+        // instead of ProblemDetail (which GlobalCsvExceptionHandler would produce).
+        // This provides a consistent response format for both validation and import errors.
         try {
-            var result = csvImportService.importUsers(file, UUID.fromString(adminId));
+            UUID parsedAdminId;
+            try {
+                parsedAdminId = UUID.fromString(adminId);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(
+                        new CsvImportResult(0, 1, java.util.List.of(
+                                new CsvRowError(0, "", "INVALID_ADMIN_ID: " + e.getMessage())
+                        ))
+                );
+            }
+            
+            var result = csvImportService.importUsers(file, parsedAdminId);
             return ResponseEntity.ok(result);
         } catch (CsvImportService.CsvImportException e) {
             return ResponseEntity.badRequest().body(
