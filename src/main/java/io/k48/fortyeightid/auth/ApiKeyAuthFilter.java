@@ -42,6 +42,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             var key = validKey.get();
             var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // Update lastUsedAt timestamp
+            apiKeyService.updateLastUsed(key);
         } else {
             log.debug("Invalid API key presented");
         }
