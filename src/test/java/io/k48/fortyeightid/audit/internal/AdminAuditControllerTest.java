@@ -15,24 +15,24 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
 class AdminAuditControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private RoleRepository roleRepository;
+    @Autowired private EntityManager entityManager;
 
     private UUID testUserId;
 
@@ -73,6 +73,9 @@ class AdminAuditControllerTest {
                 .action("ACCOUNT_SUSPENDED")
                 .details("{}")
                 .build());
+
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Test
