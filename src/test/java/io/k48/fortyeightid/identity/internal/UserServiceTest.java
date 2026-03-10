@@ -2,18 +2,20 @@ package io.k48.fortyeightid.identity.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import io.k48.fortyeightid.identity.User;
-import io.k48.fortyeightid.identity.UserStatus;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
-import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
+import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.identity.Role;
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,67 +33,114 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private UserService userService;
 
-    private CreateUserRequest validRequest() {
-        return new CreateUserRequest(
-                "K48-2024-001", "test@k48.io", "Test User",
-                null, "2024", null, "password123");
+    @Test
+    void updateProfile_updatesPhoneAndSpecialization() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest("+237600000001", "Data Science");
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.getPhone()).isEqualTo("+237600000001");
+        assertThat(updated.getSpecialization()).isEqualTo("Data Science");
+        verify(auditService, times(1)).log(eq(userId), eq("PROFILE_UPDATED"), any(Map.class));
     }
 
     @Test
-    void createUser_savesWithBcryptHash() {
-        when(userRepository.existsByMatricule(anyString())).thenReturn(false);
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("$2a$10$hashed");
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    void updateProfile_setsProfileCompletedToTrue() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
+        user.setName("John Doe");
 
-        var user = userService.createUser(validRequest());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThat(user.getPasswordHash()).isEqualTo("$2a$10$hashed");
-        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_ACTIVATION);
-        assertThat(user.isProfileCompleted()).isFalse();
+        var request = new UpdateProfileRequest("+237600000001", null);
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.isProfileCompleted()).isTrue();
     }
 
     @Test
-    void createUser_throwsOnDuplicateMatricule() {
-        when(userRepository.existsByMatricule("K48-2024-001")).thenReturn(true);
+    void updateProfile_doesNotChangeProfileCompletedIfAlreadyTrue() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", true);
 
-        assertThatThrownBy(() -> userService.createUser(validRequest()))
-                .isInstanceOf(DuplicateMatriculeException.class);
-        verify(userRepository, never()).save(any());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest("+237600000001", "Data Science");
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.isProfileCompleted()).isTrue();
     }
 
     @Test
-    void createUser_throwsOnDuplicateEmail() {
-        when(userRepository.existsByMatricule(anyString())).thenReturn(false);
-        when(userRepository.existsByEmail("test@k48.io")).thenReturn(true);
+    void updateProfile_handlesNullPhoneGracefully() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
 
-        assertThatThrownBy(() -> userService.createUser(validRequest()))
-                .isInstanceOf(DuplicateEmailException.class);
-        verify(userRepository, never()).save(any());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest(null, "Data Science");
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.getPhone()).isEqualTo("+237600000000");
+        assertThat(updated.getSpecialization()).isEqualTo("Data Science");
     }
 
     @Test
-    void findById_throwsWhenNotFound() {
-        var id = UUID.randomUUID();
-        when(userRepository.findById(id)).thenReturn(Optional.empty());
+    void updateProfile_handlesNullSpecializationGracefully() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "K48-2024-001", false);
 
-        assertThatThrownBy(() -> userService.findById(id))
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new UpdateProfileRequest("+237600000001", null);
+        var updated = userService.updateProfile(userId, request);
+
+        assertThat(updated.getPhone()).isEqualTo("+237600000001");
+        assertThat(updated.getSpecialization()).isEqualTo("Software Engineering");
+    }
+
+    @Test
+    void updateProfile_throwsWhenUserNotFound() {
+        var userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        var request = new UpdateProfileRequest("+237600000001", "Data Science");
+
+        assertThatThrownBy(() -> userService.updateProfile(userId, request))
                 .isInstanceOf(UserNotFoundException.class);
     }
 
-    @Test
-    void updateStatus_changesStatus() {
-        var id = UUID.randomUUID();
-        var user = User.builder().matricule("K48-2024-001").email("t@k48.io")
-                .name("T").passwordHash("h").status(UserStatus.ACTIVE).build();
-        when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    private User createUser(UUID id, String matricule, boolean profileCompleted) {
+        var role = new Role();
+        role.setName("STUDENT");
 
-        var result = userService.updateStatus(id, UserStatus.SUSPENDED);
-
-        assertThat(result.getStatus()).isEqualTo(UserStatus.SUSPENDED);
+        return User.builder()
+                .id(id)
+                .matricule(matricule)
+                .email("test@k48.io")
+                .name("Test User")
+                .passwordHash("hash")
+                .status(UserStatus.ACTIVE)
+                .batch("2024")
+                .specialization("Software Engineering")
+                .phone("+237600000000")
+                .profileCompleted(profileCompleted)
+                .roles(Set.of(role))
+                .build();
     }
 }

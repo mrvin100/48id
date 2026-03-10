@@ -1,10 +1,12 @@
 package io.k48.fortyeightid.identity.internal;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +22,7 @@ class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     @Transactional
     User createUser(CreateUserRequest request) {
@@ -64,5 +67,36 @@ class UserService {
         var user = findById(id);
         user.setStatus(status);
         return userRepository.save(user);
+    }
+
+    @Transactional
+    User updateProfile(UUID userId, UpdateProfileRequest request) {
+        var user = findById(userId);
+
+        // Update only allowed fields: phone and specialization
+        if (request.phone() != null && !request.phone().isBlank()) {
+            user.setPhone(request.phone());
+        }
+        if (request.specialization() != null && !request.specialization().isBlank()) {
+            user.setSpecialization(request.specialization());
+        }
+
+        // Auto-set profileCompleted to true if required fields are present
+        if (!user.isProfileCompleted() && user.getName() != null && !user.getName().isBlank()
+                && user.getPhone() != null && !user.getPhone().isBlank()) {
+            user.setProfileCompleted(true);
+        }
+
+        var updated = userRepository.save(user);
+
+        // Log audit event
+        auditService.log(userId, "PROFILE_UPDATED", Map.of(
+                "userId", userId.toString(),
+                "phone", user.getPhone(),
+                "specialization", user.getSpecialization(),
+                "profileCompleted", user.isProfileCompleted()
+        ));
+
+        return updated;
     }
 }
