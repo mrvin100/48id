@@ -41,7 +41,7 @@ class AdminAuditControllerTest {
         auditLogRepository.deleteAll();
         
         var studentRole = roleRepository.findByName("STUDENT")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("STUDENT").build()));
+                .orElseThrow(() -> new IllegalStateException("STUDENT role not found in test DB"));
         
         var user = User.builder()
                 .matricule("K48-2024-TEST")

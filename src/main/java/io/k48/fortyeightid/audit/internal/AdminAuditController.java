@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/admin/audit-log")
+@RequestMapping("${fortyeightid.api.prefix}/admin/audit-log")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 class AdminAuditController {
