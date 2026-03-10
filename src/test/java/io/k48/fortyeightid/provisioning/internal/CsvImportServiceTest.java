@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.EmailPort;
 import io.k48.fortyeightid.identity.User;
-import io.k48.fortyeightid.identity.UserProvisioningService;
+import io.k48.fortyeightid.identity.UserProvisioningPort;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import java.util.UUID;
@@ -27,7 +27,7 @@ import org.springframework.mock.web.MockMultipartFile;
 @ExtendWith(MockitoExtension.class)
 class CsvImportServiceTest {
 
-    @Mock private UserProvisioningService userProvisioningService;
+    @Mock private UserProvisioningPort userProvisioningService;
     @Mock private EmailPort emailService;
     @Mock private AuditService auditService;
     @InjectMocks private CsvImportService csvImportService;

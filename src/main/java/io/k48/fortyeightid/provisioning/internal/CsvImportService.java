@@ -4,7 +4,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.EmailPort;
-import io.k48.fortyeightid.identity.UserProvisioningService;
+import io.k48.fortyeightid.identity.UserProvisioningPort;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import java.io.IOException;
@@ -30,7 +30,7 @@ class CsvImportService {
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private final UserProvisioningService userProvisioningService;
+    private final UserProvisioningPort userProvisioningService;
     private final EmailPort emailService;
     private final AuditService auditService;
 
@@ -74,6 +74,10 @@ class CsvImportService {
             var rows = new ArrayList<CsvRow>();
             for (int i = 1; i < allRows.size(); i++) {
                 var row = allRows.get(i);
+                // Skip completely blank rows (e.g. trailing newline in CSV)
+                if (row.length == 0 || (row.length == 1 && row[0].isBlank())) {
+                    continue;
+                }
                 // Always add the row with safe defaults for missing columns
                 // validateRow() will report missing required fields
                 rows.add(new CsvRow(

@@ -1,36 +1,31 @@
-package io.k48.fortyeightid.identity;
+package io.k48.fortyeightid.identity.internal;
 
-import io.k48.fortyeightid.identity.internal.RoleRepository;
-import io.k48.fortyeightid.identity.internal.UserRepository;
+import io.k48.fortyeightid.identity.Role;
+import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserProvisioningPort;
+import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Public facade for cross-module user provisioning (e.g. CSV import).
- */
 @Service
 @RequiredArgsConstructor
-public class UserProvisioningService {
+class UserProvisioningService implements UserProvisioningPort {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Creates a new user account with PENDING_ACTIVATION status.
-     *
-     * @throws DuplicateMatriculeException if matricule already exists
-     * @throws DuplicateEmailException     if email already exists
-     */
+    @Override
     @Transactional
     public User createUser(String matricule, String email, String name,
                            String phone, String batch, String specialization,
                            String rawPassword) {
-        
+
         if (userRepository.existsByMatricule(matricule)) {
             throw new DuplicateMatriculeException("Matricule already exists: " + matricule);
         }
@@ -50,7 +45,7 @@ public class UserProvisioningService {
                 .specialization(specialization)
                 .passwordHash(passwordEncoder.encode(rawPassword))
                 .status(UserStatus.PENDING_ACTIVATION)
-                .roles(java.util.Set.of(studentRole))
+                .roles(Set.of(studentRole))
                 .build();
 
         return userRepository.save(user);
