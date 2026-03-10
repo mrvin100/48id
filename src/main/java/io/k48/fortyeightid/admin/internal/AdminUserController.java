@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,10 +70,19 @@ class AdminUserController {
         return ResponseEntity.ok(UserResponse.from(updated));
     }
 
+    @PostMapping("/{id}/reset-password")
+    ResponseEntity<ForcePasswordResetResponse> forcePasswordReset(@PathVariable UUID id,
+                                                                   @AuthenticationPrincipal String adminId) {
+        adminUserService.forcePasswordReset(id, UUID.fromString(adminId));
+        return ResponseEntity.ok(new ForcePasswordResetResponse("Password reset email sent."));
+    }
+
     @DeleteMapping("/{id}")
     ResponseEntity<Void> softDeleteUser(@PathVariable UUID id,
                                         @AuthenticationPrincipal String adminId) {
         adminUserService.softDeleteUser(id, UUID.fromString(adminId));
         return ResponseEntity.noContent().build();
     }
+
+    record ForcePasswordResetResponse(String message) {}
 }
