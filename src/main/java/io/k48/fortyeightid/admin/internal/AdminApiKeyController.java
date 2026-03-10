@@ -1,6 +1,6 @@
 package io.k48.fortyeightid.admin.internal;
 
-import io.k48.fortyeightid.auth.ApiKeyService;
+import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class AdminApiKeyController {
 
-    private final ApiKeyService apiKeyService;
+    private final ApiKeyManagementPort apiKeyService;
 
     @PostMapping
     ResponseEntity<ApiKeyCreationResponse> createApiKey(

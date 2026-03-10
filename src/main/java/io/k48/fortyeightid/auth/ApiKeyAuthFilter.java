@@ -1,4 +1,5 @@
 package io.k48.fortyeightid.auth;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +18,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "X-API-Key";
 
-    private final ApiKeyService apiKeyService;
+    private final ApiKeyManagementPort apiKeyService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,

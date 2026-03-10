@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.auth.ApiKeyService;
-import io.k48.fortyeightid.auth.ApiKeyService.ApiKeyCreationResult;
+import io.k48.fortyeightid.auth.ApiKeyManagementPort;
+import io.k48.fortyeightid.auth.ApiKeyManagementPort.ApiKeyCreationResult;
 import io.k48.fortyeightid.auth.internal.ApiKey;
 import java.time.Instant;
 import java.util.List;
@@ -21,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AdminApiKeyControllerTest {
 
-    @Mock private ApiKeyService apiKeyService;
+    @Mock private ApiKeyManagementPort apiKeyService;
     @InjectMocks private AdminApiKeyController adminApiKeyController;
 
     @Test

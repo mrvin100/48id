@@ -1,8 +1,7 @@
-package io.k48.fortyeightid.auth;
+﻿package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.internal.ApiKey;
-import io.k48.fortyeightid.auth.internal.ApiKeyRepository;
+import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ApiKeyService {
+class ApiKeyService implements ApiKeyManagementPort {
 
     private final ApiKeyRepository apiKeyRepository;
     private final AuditService auditService;
