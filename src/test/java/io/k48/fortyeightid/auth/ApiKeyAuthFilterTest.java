@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.auth.internal.ApiKey;
-import io.k48.fortyeightid.auth.internal.ApiKeyService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,7 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @ExtendWith(MockitoExtension.class)
 class ApiKeyAuthFilterTest {
 
-    @Mock private ApiKeyService apiKeyService;
+    @Mock private ApiKeyManagementPort apiKeyService;
     @InjectMocks private ApiKeyAuthFilter apiKeyAuthFilter;
 
     @AfterEach
