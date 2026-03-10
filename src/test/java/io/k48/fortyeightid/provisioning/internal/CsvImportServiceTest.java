@@ -33,6 +33,29 @@ class CsvImportServiceTest {
     @InjectMocks private CsvImportService csvImportService;
 
     @Test
+    void generateTemplate_returnsValidCsvWithHeaderAndExampleRow() {
+        var template = csvImportService.generateTemplate();
+
+        assertThat(template).isNotNull();
+        assertThat(template).contains("matricule,email,name,phone,batch,specialization");
+        assertThat(template).contains("K48-2024-001");
+        assertThat(template).contains("john.doe@k48.io");
+        assertThat(template).contains("John Doe");
+        assertThat(template).contains("2024");
+        assertThat(template).contains("Software Engineering");
+    }
+
+    @Test
+    void generateTemplate_hasCorrectCsvFormat() {
+        var template = csvImportService.generateTemplate();
+        var lines = template.split("\n");
+
+        assertThat(lines).hasSize(2);
+        assertThat(lines[0].trim()).isEqualTo("matricule,email,name,phone,batch,specialization");
+        assertThat(lines[1].trim()).contains("K48-2024-001,john.doe@k48.io,John Doe");
+    }
+
+    @Test
     void importUsers_successfullyImportsAllValidRows() {
         var csv = """
                 matricule,email,name,phone,batch,specialization
