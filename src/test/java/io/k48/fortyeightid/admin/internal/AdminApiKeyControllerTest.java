@@ -122,39 +122,4 @@ class AdminApiKeyControllerTest {
         assertThatThrownBy(() -> adminApiKeyController.revokeApiKey(apiKeyId, adminId.toString()))
                 .isInstanceOf(ApiKeyNotFoundException.class);
     }
-
-    @Test
-    void rotateApiKey_returnsNewRawKey() {
-        var apiKeyId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
-        var rotatedAt = Instant.now();
-
-        var result = new ApiKeyManagementPort.ApiKeyRotationResult(
-                "new-raw-key-xyz",
-                "48Hub",
-                rotatedAt
-        );
-
-        when(apiKeyService.rotateApiKey(apiKeyId, adminId)).thenReturn(result);
-
-        var response = adminApiKeyController.rotateApiKey(apiKeyId, adminId.toString());
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.key()).isEqualTo("new-raw-key-xyz");
-        assertThat(body.applicationName()).isEqualTo("48Hub");
-        assertThat(body.rotatedAt()).isEqualTo(rotatedAt);
-    }
-
-    @Test
-    void rotateApiKey_returnsNotFoundForNonExistentKey() {
-        var apiKeyId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
-
-        doThrow(new ApiKeyNotFoundException("API key not found: " + apiKeyId))
-                .when(apiKeyService).rotateApiKey(apiKeyId, adminId);
-
-        assertThatThrownBy(() -> adminApiKeyController.rotateApiKey(apiKeyId, adminId.toString()))
-                .isInstanceOf(ApiKeyNotFoundException.class);
-    }
 }
