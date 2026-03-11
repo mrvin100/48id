@@ -12,12 +12,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "audit_log")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -39,6 +41,9 @@ public class AuditLog {
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
+
+    @Column(name = "user_agent", length = 255)
+    private String userAgent;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
