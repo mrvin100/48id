@@ -52,12 +52,14 @@ class AdminApiKeyControllerTest {
 
     @Test
     void listApiKeys_returnsMetadataOnly() {
+        var adminId = UUID.randomUUID();
         var apiKey1 = ApiKey.builder()
                 .id(UUID.randomUUID())
                 .appName("48Hub")
                 .description("Alumni directory")
                 .keyHash("hash1")
                 .createdAt(Instant.now())
+                .createdBy(adminId)
                 .build();
 
         var apiKey2 = ApiKey.builder()
@@ -66,6 +68,7 @@ class AdminApiKeyControllerTest {
                 .keyHash("hash2")
                 .createdAt(Instant.now())
                 .lastUsedAt(Instant.now().minusSeconds(3600))
+                .createdBy(adminId)
                 .build();
 
         when(apiKeyService.listAll()).thenReturn(List.of(apiKey1, apiKey2));
@@ -77,18 +80,20 @@ class AdminApiKeyControllerTest {
         assertThat(body).hasSize(2);
         assertThat(body.get(0).applicationName()).isEqualTo("48Hub");
         assertThat(body.get(0).description()).isEqualTo("Alumni directory");
+        assertThat(body.get(0).createdBy()).isEqualTo(adminId);
         assertThat(body.get(1).applicationName()).isEqualTo("LP48");
         assertThat(body.get(1).lastUsedAt()).isNotNull();
+        assertThat(body.get(1).createdBy()).isEqualTo(adminId);
     }
 
     @Test
-    void revokeApiKey_deletesKeyAndReturnsNoContent() {
-        var apiKeyId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
+    void listApiKeys_returnsEmptyArrayWhenNoKeysExist() {
+        when(apiKeyService.listAll()).thenReturn(List.of());
 
-        var response = adminApiKeyController.revokeApiKey(apiKeyId, adminId.toString());
+        var response = adminApiKeyController.listApiKeys();
 
-        assertThat(response.getStatusCode().value()).isEqualTo(204);
-        verify(apiKeyService).revokeApiKey(apiKeyId, adminId);
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        var body = response.getBody();
+        assertThat(body).isEmpty();
     }
 }
