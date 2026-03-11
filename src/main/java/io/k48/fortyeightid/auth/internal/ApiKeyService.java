@@ -3,6 +3,7 @@ package io.k48.fortyeightid.auth.internal;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
+import io.k48.fortyeightid.shared.exception.ApiKeyNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,10 +66,14 @@ class ApiKeyService implements ApiKeyManagementPort {
     @Override
     @Transactional
     public void revokeApiKey(UUID apiKeyId, UUID revokedBy) {
+        var apiKey = apiKeyRepository.findById(apiKeyId)
+                .orElseThrow(() -> new ApiKeyNotFoundException("API key not found: " + apiKeyId));
+
         apiKeyRepository.deleteById(apiKeyId);
 
         auditService.log(revokedBy, "API_KEY_REVOKED", Map.of(
-                "apiKeyId", apiKeyId.toString()
+                "apiKeyId", apiKeyId.toString(),
+                "appName", apiKey.getAppName()
         ));
     }
 

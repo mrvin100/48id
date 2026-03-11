@@ -1,14 +1,17 @@
 package io.k48.fortyeightid.admin.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort.ApiKeyCreationResult;
+import io.k48.fortyeightid.shared.exception.ApiKeyNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -95,5 +98,28 @@ class AdminApiKeyControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         var body = response.getBody();
         assertThat(body).isEmpty();
+    }
+
+    @Test
+    void revokeApiKey_deletesKeyAndReturnsNoContent() {
+        var apiKeyId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+
+        var response = adminApiKeyController.revokeApiKey(apiKeyId, adminId.toString());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(204);
+        verify(apiKeyService).revokeApiKey(apiKeyId, adminId);
+    }
+
+    @Test
+    void revokeApiKey_returnsNotFoundForNonExistentKey() {
+        var apiKeyId = UUID.randomUUID();
+        var adminId = UUID.randomUUID();
+
+        doThrow(new ApiKeyNotFoundException("API key not found: " + apiKeyId))
+                .when(apiKeyService).revokeApiKey(apiKeyId, adminId);
+
+        assertThatThrownBy(() -> adminApiKeyController.revokeApiKey(apiKeyId, adminId.toString()))
+                .isInstanceOf(ApiKeyNotFoundException.class);
     }
 }
