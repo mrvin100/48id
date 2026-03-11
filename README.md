@@ -27,10 +27,6 @@ Centralized identity and authentication platform for the K48 ecosystem
 ## Documentation
 
 - **[Integration Guide](INTEGRATION_GUIDE.md)** — How to integrate your application with 48ID
-  - Pattern 1: Server-Side Rendering (Forward User JWT) — No API key required
-  - Pattern 2: Token Verification (API Key + JWT) — For server-side validation
-  - Pattern 3: Identity Lookup by ID — Get public profile by UUID
-  - Pattern 4: Matricule Validation — Check if matricule exists
 - **Swagger UI** — Interactive API documentation at http://localhost:8080/swagger-ui.html
 
 ## API Authentication
@@ -54,8 +50,6 @@ For end-user authentication:
 curl -X GET http://localhost:8080/api/v1/me \
   -H "Authorization: Bearer <jwt-token>"
 ```
-
-**Note:** The `GET /api/v1/me` endpoint does NOT require an API key — it uses the user's JWT for authentication. This is the recommended pattern for server-side rendering.
 
 ## Development
 

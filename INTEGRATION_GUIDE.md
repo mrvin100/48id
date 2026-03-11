@@ -13,92 +13,6 @@
 
 ---
 
-## Integration Patterns
-
-### Pattern 1: Server-Side Rendering (Forward User JWT)
-
-**Use Case:** Your application needs to display user identity data in server-rendered pages.
-
-**Flow:**
-1. User logs in via 48ID and receives JWT
-2. User's browser sends JWT to your application
-3. Your backend forwards JWT to `GET /api/v1/me`
-4. 48ID returns verified identity data
-5. Your application renders page with user data
-
-**Example:**
-```bash
-# Your backend forwards user's JWT
-curl -X GET http://localhost:8080/api/v1/me \
-  -H "Authorization: Bearer <user-jwt>"
-```
-
-**No API key required** — the user's JWT is sufficient authentication.
-
----
-
-### Pattern 2: Token Verification (API Key + JWT)
-
-**Use Case:** Your application needs to verify a JWT's validity without user context.
-
-**Flow:**
-1. User presents JWT to your application
-2. Your backend calls `POST /api/v1/auth/verify-token` with API key
-3. 48ID returns validity status and identity claims
-4. Your application proceeds based on validity
-
-**Example:**
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/verify-token \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"token": "<user-jwt>"}'
-```
-
-**API key required** — this is a server-to-server operation.
-
----
-
-### Pattern 3: Identity Lookup by ID
-
-**Use Case:** Display public identity information for a user without their JWT.
-
-**Flow:**
-1. Your application has a user's UUID
-2. Your backend calls `GET /api/v1/users/{id}/identity` with API key
-3. 48ID returns public identity fields
-4. Your application displays the information
-
-**Example:**
-```bash
-curl -X GET http://localhost:8080/api/v1/users/{user-id}/identity \
-  -H "X-API-Key: your-api-key"
-```
-
-**API key required** — accessing another user's data.
-
----
-
-### Pattern 4: Matricule Validation
-
-**Use Case:** Validate a user-provided matricule before authentication.
-
-**Flow:**
-1. User enters matricule in your application
-2. Your backend calls `GET /api/v1/users/{matricule}/exists` with API key
-3. 48ID returns existence status and account status
-4. Your application decides whether to proceed
-
-**Example:**
-```bash
-curl -X GET http://localhost:8080/api/v1/users/K48-2024-001/exists \
-  -H "X-API-Key: your-api-key"
-```
-
-**API key required** — querying the user database.
-
----
-
 ## API Key Authentication
 
 ### Obtaining an API Key
@@ -123,16 +37,15 @@ curl -X GET http://localhost:8080/api/v1/admin/api-keys \
 - API keys are for server-to-server communication only
 - Never expose API keys in client-side code
 
-### API Key-Protected Endpoints
+### API Key Endpoints
 
 All API key-protected endpoints require the `X-API-Key` header:
 
-| Method | Endpoint | Description | API Key Required |
-|--------|----------|-------------|------------------|
-| `POST` | `/api/v1/auth/verify-token` | Verify a user's JWT token | ✅ |
-| `GET` | `/api/v1/users/{id}/identity` | Get public identity claims | ✅ |
-| `GET` | `/api/v1/users/{matricule}/exists` | Check if matricule exists | ✅ |
-| `GET` | `/api/v1/me` | Get current user profile | ❌ (uses JWT) |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/auth/verify-token` | Verify a user's JWT token |
+| `GET` | `/api/v1/users/{id}/identity` | Get public identity claims |
+| `GET` | `/api/v1/users/{matricule}/exists` | Check if matricule exists |
 
 ### Error Responses
 

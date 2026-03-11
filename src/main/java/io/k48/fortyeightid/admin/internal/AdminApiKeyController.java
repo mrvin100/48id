@@ -51,4 +51,14 @@ class AdminApiKeyController {
         apiKeyService.revokeApiKey(id, UUID.fromString(adminId));
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/rotate")
+    ResponseEntity<ApiKeyRotationResponse> rotateApiKey(@PathVariable UUID id,
+                                                        @AuthenticationPrincipal String adminId) {
+        var result = apiKeyService.rotateApiKey(id, UUID.fromString(adminId));
+        return ResponseEntity.ok(new ApiKeyRotationResponse(
+                result.rawKey(),
+                result.applicationName(),
+                result.rotatedAt()));
+    }
 }
