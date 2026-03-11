@@ -32,7 +32,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         var apiKey = request.getHeader(API_KEY_HEADER);
         if (apiKey == null || apiKey.isBlank()) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Missing X-API-Key header\",\"message\":\"Requires X-API-Key header. Contact K48 admin to obtain an API key.\"}");
             return;
         }
 
