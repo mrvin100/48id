@@ -84,6 +84,29 @@ class ApiKeyService implements ApiKeyManagementPort {
         apiKeyRepository.save(apiKey);
     }
 
+    @Override
+    @Transactional
+    public ApiKeyRotationResult rotateApiKey(UUID apiKeyId, UUID rotatedBy) {
+        var apiKey = apiKeyRepository.findById(apiKeyId)
+                .orElseThrow(() -> new ApiKeyNotFoundException("API key not found: " + apiKeyId));
+
+        // Generate new key
+        var rawKey = generateSecureKey();
+        var newHash = sha256(rawKey);
+
+        // Update the key hash
+        apiKey.setKeyHash(newHash);
+        apiKeyRepository.save(apiKey);
+
+        // Log audit event
+        auditService.log(rotatedBy, "API_KEY_ROTATED", Map.of(
+                "apiKeyId", apiKeyId.toString(),
+                "appName", apiKey.getAppName()
+        ));
+
+        return new ApiKeyRotationResult(rawKey, apiKey.getAppName(), Instant.now());
+    }
+
     private String generateSecureKey() {
         var bytes = new byte[32]; // 256 bits
         secureRandom.nextBytes(bytes);
