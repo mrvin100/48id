@@ -4,6 +4,7 @@ import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.AccountLockedException;
 import io.k48.fortyeightid.shared.exception.NewPasswordSameAsCurrentException;
 import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
@@ -33,11 +34,19 @@ class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final JwtConfig jwtConfig;
     private final AuditService auditService;
+    private final LoginAttemptService loginAttemptService;
 
     LoginResponse login(LoginRequest request) {
+        // Check if account is locked
+        if (loginAttemptService.isLocked(request.matricule())) {
+            long remainingSeconds = loginAttemptService.getRemainingLockoutTime(request.matricule());
+            throw new AccountLockedException(remainingSeconds);
+        }
+
         var userOpt = userQueryService.findByMatricule(request.matricule());
 
         if (userOpt.isEmpty()) {
+            loginAttemptService.recordFailedAttempt(request.matricule());
             throw new BadCredentialsException("Matricule or password is incorrect.");
         }
 
@@ -52,8 +61,19 @@ class AuthService {
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            boolean locked = loginAttemptService.recordFailedAttempt(request.matricule());
+            if (locked) {
+                auditService.log(user.getId(), "ACCOUNT_LOCKED", Map.of(
+                        "userId", user.getId().toString(),
+                        "matricule", request.matricule(),
+                        "reason", "Too many failed login attempts"
+                ));
+            }
             throw new BadCredentialsException("Matricule or password is incorrect.");
         }
+
+        // Successful login - reset failed attempts
+        loginAttemptService.resetFailedAttempts(request.matricule());
 
         var principal = new UserPrincipal(user);
         var accessToken = jwtTokenService.generateAccessToken(principal, user);
