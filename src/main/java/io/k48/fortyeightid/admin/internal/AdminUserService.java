@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.admin.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.LoginAttemptPort;
 import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.auth.TokenRevocationService;
 import io.k48.fortyeightid.identity.User;
@@ -34,6 +35,7 @@ class AdminUserService {
     private final AuditService auditService;
     private final TokenRevocationService tokenRevocationService;
     private final PasswordResetPort passwordResetService;
+    private final LoginAttemptPort loginAttemptService;
 
     Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable) {
         return userQueryService.findAll(status, batch, role, pageable);
@@ -144,6 +146,19 @@ class AdminUserService {
                 "changedBy", adminUserId.toString(),
                 "targetUser", targetUserId.toString(),
                 "reason", "soft-delete"
+        ));
+    }
+
+    void unlockAccount(UUID targetUserId, UUID adminUserId) {
+        var user = userQueryService.findById(targetUserId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));
+
+        loginAttemptService.unlockAccount(user.getMatricule(), adminUserId);
+
+        auditService.log(adminUserId, "ACCOUNT_UNLOCKED_BY_ADMIN", Map.of(
+                "performedBy", adminUserId.toString(),
+                "targetUser", targetUserId.toString(),
+                "matricule", user.getMatricule()
         ));
     }
 }

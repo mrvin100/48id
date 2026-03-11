@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.LoginAttemptPort;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class LoginAttemptService {
+public class LoginAttemptService implements LoginAttemptPort {
 
     private static final int MAX_ATTEMPTS = 5;
     private static final long LOCKOUT_TIME_SECONDS = 900; // 15 minutes
