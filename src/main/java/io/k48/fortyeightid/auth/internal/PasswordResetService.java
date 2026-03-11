@@ -2,6 +2,7 @@ package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.EmailPort;
+import io.k48.fortyeightid.auth.PasswordPolicyService;
 import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -12,7 +13,6 @@ import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 class PasswordResetService implements PasswordResetPort {
 
     private static final long RESET_TOKEN_TTL_SECONDS = 3600; // 1 hour
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
-    );
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailPort emailService;
@@ -35,6 +32,7 @@ class PasswordResetService implements PasswordResetPort {
     private final AuditService auditService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordPolicyService passwordPolicyService;
 
     @Override
     @Transactional
@@ -96,7 +94,7 @@ class PasswordResetService implements PasswordResetPort {
         }
 
         // Validate password policy
-        validatePasswordPolicy(newPassword);
+        passwordPolicyService.validate(newPassword);
 
         // Find user and update password
         var user = userQueryService.findById(resetToken.getUserId())
@@ -119,14 +117,5 @@ class PasswordResetService implements PasswordResetPort {
         ));
 
         log.info("Password reset completed for user {}", user.getId());
-    }
-
-    private void validatePasswordPolicy(String password) {
-        if (!PASSWORD_PATTERN.matcher(password).matches()) {
-            throw new PasswordPolicyViolationException(
-                    "Password must be at least 8 characters long and contain at least one uppercase letter, " +
-                    "one lowercase letter, one digit, and one special character (@$!%*?&)."
-            );
-        }
     }
 }

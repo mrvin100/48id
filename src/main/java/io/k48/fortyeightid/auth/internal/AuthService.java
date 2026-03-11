@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.PasswordPolicyService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
@@ -10,7 +11,6 @@ import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +24,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 class AuthService {
 
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
-    );
-
     private final UserQueryService userQueryService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
@@ -35,6 +31,7 @@ class AuthService {
     private final JwtConfig jwtConfig;
     private final AuditService auditService;
     private final LoginAttemptService loginAttemptService;
+    private final PasswordPolicyService passwordPolicyService;
 
     LoginResponse login(LoginRequest request) {
         // Check if account is locked
@@ -144,7 +141,7 @@ class AuthService {
         }
 
         // Validate new password against password policy
-        validatePasswordPolicy(request.newPassword());
+        passwordPolicyService.validate(request.newPassword());
 
         // Update password
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
@@ -161,12 +158,4 @@ class AuthService {
         ));
     }
 
-    private void validatePasswordPolicy(String password) {
-        if (!PASSWORD_PATTERN.matcher(password).matches()) {
-            throw new PasswordPolicyViolationException(
-                    "Password must be at least 8 characters long and contain at least one uppercase letter, " +
-                    "one lowercase letter, one digit, and one special character (@$!%*?&)."
-            );
-        }
-    }
 }

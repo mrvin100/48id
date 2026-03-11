@@ -3,18 +3,22 @@ package io.k48.fortyeightid.auth.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
+import io.k48.fortyeightid.auth.PasswordPolicyService;
 import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.internal.UserRepository;
 import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -46,6 +50,9 @@ class AuthServiceTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private PasswordPolicyService passwordPolicyService;
 
     @InjectMocks
     private AuthService authService;
@@ -93,6 +100,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
 
         var request = new ChangePasswordRequest("OldPass@123", "Short1!");
+        doThrow(new PasswordPolicyViolationException(List.of("Password must be at least 8 characters long")))
+                .when(passwordPolicyService).validate("Short1!");
 
         assertThatThrownBy(() -> authService.changePassword(userId, request))
                 .isInstanceOf(PasswordPolicyViolationException.class);
@@ -107,6 +116,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
 
         var request = new ChangePasswordRequest("OldPass@123", "lowercase1@");
+        doThrow(new PasswordPolicyViolationException(List.of("Password must contain at least one uppercase letter (A-Z)")))
+                .when(passwordPolicyService).validate("lowercase1@");
 
         assertThatThrownBy(() -> authService.changePassword(userId, request))
                 .isInstanceOf(PasswordPolicyViolationException.class);
@@ -121,6 +132,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
 
         var request = new ChangePasswordRequest("OldPass@123", "UPPERCASE1@");
+        doThrow(new PasswordPolicyViolationException(List.of("Password must contain at least one lowercase letter (a-z)")))
+                .when(passwordPolicyService).validate("UPPERCASE1@");
 
         assertThatThrownBy(() -> authService.changePassword(userId, request))
                 .isInstanceOf(PasswordPolicyViolationException.class);
@@ -135,6 +148,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
 
         var request = new ChangePasswordRequest("OldPass@123", "NoDigit@Abc");
+        doThrow(new PasswordPolicyViolationException(List.of("Password must contain at least one digit (0-9)")))
+                .when(passwordPolicyService).validate("NoDigit@Abc");
 
         assertThatThrownBy(() -> authService.changePassword(userId, request))
                 .isInstanceOf(PasswordPolicyViolationException.class);
@@ -149,6 +164,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("OldPass@123", "oldHash")).thenReturn(true);
 
         var request = new ChangePasswordRequest("OldPass@123", "NoSpecial1A");
+        doThrow(new PasswordPolicyViolationException(List.of("Password must contain at least one special character (@$!%*?&)")))
+                .when(passwordPolicyService).validate("NoSpecial1A");
 
         assertThatThrownBy(() -> authService.changePassword(userId, request))
                 .isInstanceOf(PasswordPolicyViolationException.class);
