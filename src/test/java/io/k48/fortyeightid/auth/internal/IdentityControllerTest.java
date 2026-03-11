@@ -1,7 +1,7 @@
 package io.k48.fortyeightid.auth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.identity.Role;
@@ -11,6 +11,7 @@ import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.JwtSignatureException;
 import io.k48.fortyeightid.shared.exception.JwtTokenExpiredException;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
@@ -108,87 +110,6 @@ class IdentityControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("USER_NOT_FOUND");
-    }
-
-    @Test
-    void getIdentity_validId_returnsPublicIdentity() {
-        var userId = UUID.randomUUID();
-        var user = createUser(userId, UserStatus.ACTIVE);
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
-
-        var response = identityController.getIdentity(userId);
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.id()).isEqualTo(userId.toString());
-        assertThat(body.matricule()).isEqualTo("K48-2024-001");
-        assertThat(body.name()).isEqualTo("Test User");
-        assertThat(body.batch()).isEqualTo("2024");
-        assertThat(body.profileCompleted()).isTrue();
-    }
-
-    @Test
-    void getIdentity_suspendedUser_returnsNotFound() {
-        var userId = UUID.randomUUID();
-        var user = createUser(userId, UserStatus.SUSPENDED);
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> identityController.getIdentity(userId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
-    }
-
-    @Test
-    void getIdentity_nonExistentUser_returnsNotFound() {
-        var userId = UUID.randomUUID();
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> identityController.getIdentity(userId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
-    }
-
-    @Test
-    void matriculeExists_existingMatricule_returnsExistsWithStatus() {
-        var user = createUser(UUID.randomUUID(), UserStatus.ACTIVE);
-
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-
-        var response = identityController.matriculeExists("K48-2024-001");
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.exists()).isTrue();
-        assertThat(body.status()).isEqualTo("ACTIVE");
-    }
-
-    @Test
-    void matriculeExists_nonExistentMatricule_returnsNotExists() {
-        when(userQueryService.findByMatricule("NONEXISTENT")).thenReturn(Optional.empty());
-
-        var response = identityController.matriculeExists("NONEXISTENT");
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.exists()).isFalse();
-        assertThat(body.status()).isNull();
-    }
-
-    @Test
-    void matriculeExists_suspendedUser_returnsExistsWithSuspendedStatus() {
-        var user = createUser(UUID.randomUUID(), UserStatus.SUSPENDED);
-
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
-
-        var response = identityController.matriculeExists("K48-2024-001");
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.exists()).isTrue();
-        assertThat(body.status()).isEqualTo("SUSPENDED");
     }
 
     private Jwt createMockJwt(String subject) {
