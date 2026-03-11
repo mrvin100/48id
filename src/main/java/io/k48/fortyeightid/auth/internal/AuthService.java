@@ -4,6 +4,7 @@ import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.NewPasswordSameAsCurrentException;
 import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.util.Map;
@@ -115,6 +116,11 @@ class AuthService {
         // Validate current password
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new BadCredentialsException("Current password is incorrect.");
+        }
+
+        // Check if new password is the same as current password
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new NewPasswordSameAsCurrentException("New password must be different from your current password.");
         }
 
         // Validate new password against password policy

@@ -165,6 +165,21 @@ class AuthServiceTest {
                 .isInstanceOf(io.k48.fortyeightid.shared.exception.UserNotFoundException.class);
     }
 
+    @Test
+    void changePassword_throwsWhenNewPasswordIsSameAsCurrent() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, "oldHash");
+
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("SamePass@123", "oldHash")).thenReturn(true);
+        when(passwordEncoder.matches("SamePass@123", "oldHash")).thenReturn(true);
+
+        var request = new ChangePasswordRequest("SamePass@123", "SamePass@123");
+
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(io.k48.fortyeightid.shared.exception.NewPasswordSameAsCurrentException.class);
+    }
+
     private User createUser(UUID id, String passwordHash) {
         var role = new Role();
         role.setName("STUDENT");
