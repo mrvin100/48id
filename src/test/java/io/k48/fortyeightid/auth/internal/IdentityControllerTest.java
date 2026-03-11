@@ -114,8 +114,14 @@ class IdentityControllerTest {
 
     private Jwt createMockJwt(String subject) {
         return Jwt.withTokenValue("token")
+                .header("alg", "RS256")
                 .subject(subject)
                 .claim("role", "STUDENT")
+                .claim("matricule", "K48-2024-001")
+                .claim("name", "Test User")
+                .claim("batch", "2024")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
                 .build();
     }
 
