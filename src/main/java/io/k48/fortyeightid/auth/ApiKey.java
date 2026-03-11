@@ -48,6 +48,9 @@ public class ApiKey {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
+    @Column(name = "created_by")
+    private UUID createdBy;
+
     public void updateLastUsed() {
         this.lastUsedAt = Instant.now();
     }

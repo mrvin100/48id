@@ -44,6 +44,7 @@ class ApiKeyService implements ApiKeyManagementPort {
                 .appName(appName)
                 .description(description)
                 .keyHash(hash)
+                .createdBy(createdBy)
                 .build();
 
         var saved = apiKeyRepository.save(apiKey);

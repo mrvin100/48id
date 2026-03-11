@@ -9,7 +9,8 @@ record ApiKeyResponse(
         String applicationName,
         String description,
         Instant createdAt,
-        Instant lastUsedAt) {
+        Instant lastUsedAt,
+        UUID createdBy) {
 
     static ApiKeyResponse from(ApiKey apiKey) {
         return new ApiKeyResponse(
@@ -17,6 +18,7 @@ record ApiKeyResponse(
                 apiKey.getAppName(),
                 apiKey.getDescription(),
                 apiKey.getCreatedAt(),
-                apiKey.getLastUsedAt());
+                apiKey.getLastUsedAt(),
+                apiKey.getCreatedBy());
     }
 }
