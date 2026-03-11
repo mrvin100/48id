@@ -1,7 +1,6 @@
 package io.k48.fortyeightid.auth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -111,47 +110,6 @@ class IdentityControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("USER_NOT_FOUND");
-    }
-
-    @Test
-    void getIdentity_validId_returnsPublicIdentity() {
-        var userId = UUID.randomUUID();
-        var user = createUser(userId, UserStatus.ACTIVE);
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
-
-        var response = identityController.getIdentity(userId);
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        var body = response.getBody();
-        assertThat(body.id()).isEqualTo(userId.toString());
-        assertThat(body.matricule()).isEqualTo("K48-2024-001");
-        assertThat(body.name()).isEqualTo("Test User");
-        assertThat(body.batch()).isEqualTo("2024");
-        assertThat(body.profileCompleted()).isTrue();
-    }
-
-    @Test
-    void getIdentity_suspendedUser_returnsNotFound() {
-        var userId = UUID.randomUUID();
-        var user = createUser(userId, UserStatus.SUSPENDED);
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> identityController.getIdentity(userId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
-    }
-
-    @Test
-    void getIdentity_nonExistentUser_returnsNotFound() {
-        var userId = UUID.randomUUID();
-
-        when(userQueryService.findById(userId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> identityController.getIdentity(userId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
     }
 
     private Jwt createMockJwt(String subject) {

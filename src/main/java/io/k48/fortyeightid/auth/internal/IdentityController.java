@@ -6,8 +6,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,27 +59,5 @@ class IdentityController {
         } catch (Exception e) {
             return ResponseEntity.ok(VerifyTokenResponse.invalid("TOKEN_INVALID"));
         }
-    }
-
-    @GetMapping("/users/{id}/identity")
-    ResponseEntity<PublicIdentityResponse> getIdentity(@PathVariable UUID id) {
-        var user = userQueryService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // Suspended users are treated as non-existent (privacy protection)
-        if (user.getStatus() == UserStatus.SUSPENDED) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        var response = new PublicIdentityResponse(
-                user.getId().toString(),
-                user.getMatricule(),
-                user.getName(),
-                user.getBatch() != null ? user.getBatch() : "",
-                user.getSpecialization() != null ? user.getSpecialization() : "",
-                user.isProfileCompleted()
-        );
-
-        return ResponseEntity.ok(response);
     }
 }
