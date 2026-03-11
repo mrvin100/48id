@@ -3,7 +3,9 @@ package io.k48.fortyeightid.auth.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.EmailPort;
+import io.k48.fortyeightid.auth.PasswordPolicyService;
 import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
@@ -19,6 +22,7 @@ import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.ResetTokenExpiredException;
 import io.k48.fortyeightid.shared.exception.ResetTokenInvalidException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -49,6 +53,9 @@ class PasswordResetServiceTest {
 
     @Mock
     private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private PasswordPolicyService passwordPolicyService;
 
     @InjectMocks
     private PasswordResetService passwordResetService;
@@ -117,6 +124,8 @@ class PasswordResetServiceTest {
         var resetToken = createResetToken(token, userId, false);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+        doThrow(new PasswordPolicyViolationException(List.of("Password must be at least 8 characters long")))
+                .when(passwordPolicyService).validate("weak");
 
         assertThatThrownBy(() -> passwordResetService.resetPassword(token, "weak"))
                 .isInstanceOf(PasswordPolicyViolationException.class);
