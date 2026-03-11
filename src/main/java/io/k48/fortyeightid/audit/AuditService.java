@@ -51,6 +51,7 @@ public class AuditService {
                     .action(action)
                     .details(objectMapper.writeValueAsString(details))
                     .ipAddress(capturedIp)
+                    .userAgent(capturedUserAgent)
                     .build();
             auditLogRepository.save(entry);
         } catch (Exception ex) {
