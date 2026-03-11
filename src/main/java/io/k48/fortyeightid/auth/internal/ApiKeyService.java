@@ -65,10 +65,14 @@ class ApiKeyService implements ApiKeyManagementPort {
     @Override
     @Transactional
     public void revokeApiKey(UUID apiKeyId, UUID revokedBy) {
+        var apiKey = apiKeyRepository.findById(apiKeyId)
+                .orElseThrow(() -> new ApiKeyNotFoundException("API key not found: " + apiKeyId));
+
         apiKeyRepository.deleteById(apiKeyId);
 
         auditService.log(revokedBy, "API_KEY_REVOKED", Map.of(
-                "apiKeyId", apiKeyId.toString()
+                "apiKeyId", apiKeyId.toString(),
+                "appName", apiKey.getAppName()
         ));
     }
 
