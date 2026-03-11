@@ -84,5 +84,12 @@ class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/unlock")
+    ResponseEntity<Void> unlockAccount(@PathVariable UUID id,
+                                       @AuthenticationPrincipal String adminId) {
+        adminUserService.unlockAccount(id, UUID.fromString(adminId));
+        return ResponseEntity.ok().build();
+    }
+
     record ForcePasswordResetResponse(String message) {}
 }
