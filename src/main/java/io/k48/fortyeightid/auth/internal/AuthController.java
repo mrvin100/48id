@@ -48,4 +48,10 @@ class AuthController {
         passwordResetService.handleForgotPassword(request.email());
         return ResponseEntity.ok(new ForgotPasswordResponse("If this email is registered, a password reset link has been sent."));
     }
+
+    @PostMapping("/reset-password")
+    ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok(new ResetPasswordResponse("Password reset successful. Please log in with your new password."));
+    }
 }
