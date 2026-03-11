@@ -3,6 +3,7 @@ package io.k48.fortyeightid.auth.internal;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
+import io.k48.fortyeightid.shared.exception.ApiKeyNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
