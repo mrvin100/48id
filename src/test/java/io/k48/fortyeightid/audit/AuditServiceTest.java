@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.audit.internal.AuditLog;
 import io.k48.fortyeightid.audit.internal.AuditLogRepository;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,8 @@ class AuditServiceTest {
     void log_writesAuditLogWithDetails() {
         var userId = UUID.randomUUID();
         var action = "TEST_ACTION";
-        var details = Map.of("key", "value");
+        Map<String, Object> details = new HashMap<>();
+        details.put("key", "value");
 
         auditService.log(userId, action, details);
 
@@ -40,7 +42,8 @@ class AuditServiceTest {
     void log_withExplicitIpAddress_usesProvidedIp() {
         var userId = UUID.randomUUID();
         var action = "TEST_ACTION";
-        var details = Map.of("key", "value");
+        Map<String, Object> details = new HashMap<>();
+        details.put("key", "value");
         var ipAddress = "192.168.1.1";
         var userAgent = "TestAgent";
 
@@ -53,7 +56,8 @@ class AuditServiceTest {
     void log_errorDoesNotBubbleUp() {
         var userId = UUID.randomUUID();
         var action = "TEST_ACTION";
-        var details = Map.of("key", "value");
+        Map<String, Object> details = new HashMap<>();
+        details.put("key", "value");
 
         when(auditLogRepository.save(any(AuditLog.class)))
                 .thenThrow(new RuntimeException("Database error"));
