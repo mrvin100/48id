@@ -1,6 +1,6 @@
 # 48ID
 
-48ID is the centralized identity and authentication platform for the K48 ecosystem. It provides a single backend for user authentication, token issuance, user provisioning, profile management, auditability, and application-to-application token verification.
+48ID is the centralized identity and authentication platform for the K48 ecosystem. It provides a unified backend for user authentication, JWT token management, user provisioning, profile administration, audit logging, and secure application-to-application integration.
 
 This repository documents and implements the **MVP scope** of 48ID.
 

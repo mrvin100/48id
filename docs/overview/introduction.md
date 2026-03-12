@@ -1,8 +1,8 @@
 # Introduction
 
-## What 48ID is
+## What is 48ID?
 
-48ID is the identity service for the K48 ecosystem. It centralizes authentication, token issuance, user provisioning, authorization boundaries, and audit visibility so that other K48 applications do not have to implement these concerns independently.
+48ID is the identity and authentication service for the K48 ecosystem. It centralizes authentication, JWT token management, user provisioning, role-based authorization, and audit logging so that other K48 applications can rely on a single, consistent identity layer instead of implementing these concerns independently.
 
 ## MVP scope
 

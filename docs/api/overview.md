@@ -2,11 +2,13 @@
 
 ## Base URL
 
-Default local base URL:
+The default local development base URL is:
 
 ```text
 http://localhost:8080/api/v1
 ```
+
+In production, use your deployed instance URL.
 
 ## API categories
 
