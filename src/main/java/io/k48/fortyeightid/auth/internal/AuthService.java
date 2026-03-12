@@ -9,6 +9,7 @@ import io.k48.fortyeightid.shared.exception.AccountLockedException;
 import io.k48.fortyeightid.shared.exception.NewPasswordSameAsCurrentException;
 import io.k48.fortyeightid.shared.exception.PasswordPolicyViolationException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -33,6 +35,7 @@ class AuthService {
     private final LoginAttemptService loginAttemptService;
     private final PasswordPolicyService passwordPolicyService;
 
+    @Transactional
     LoginResponse login(LoginRequest request) {
         // Check if account is locked
         if (loginAttemptService.isLocked(request.matricule())) {
@@ -73,7 +76,7 @@ class AuthService {
         loginAttemptService.resetFailedAttempts(request.matricule());
 
         // Update last login timestamp
-        user.setLastLoginAt(java.time.OffsetDateTime.now());
+        user.setLastLoginAt(OffsetDateTime.now());
         userQueryService.save(user);
 
         var principal = new UserPrincipal(user);

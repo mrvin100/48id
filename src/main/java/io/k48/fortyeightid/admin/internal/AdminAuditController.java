@@ -34,14 +34,7 @@ class AdminAuditController {
 
         var auditPage = auditLogRepository.findWithFilters(eventType, userId, from, to, pageable);
 
-        var responsePage = auditPage.map(audit -> new AuditLogResponse(
-                audit.getId(),
-                audit.getUserId(),
-                audit.getAction(),
-                audit.getIpAddress(),
-                audit.getUserAgent(),
-                audit.getCreatedAt()
-        ));
+        var responsePage = auditPage.map(this::toResponse);
 
         return ResponseEntity.ok(responsePage);
     }
@@ -53,23 +46,21 @@ class AdminAuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        var auditPage = auditLogRepository.findWithFilters(
-                null, // Include all event types
-                userId,
-                from,
-                to,
-                pageable);
+        var auditPage = auditLogRepository.findLoginHistory(userId, from, to, pageable);
 
-        // Map to response (filtering done in repository query)
-        var responsePage = auditPage.map(audit -> new AuditLogResponse(
+        var responsePage = auditPage.map(this::toResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    private AuditLogResponse toResponse(AuditLog audit) {
+        return new AuditLogResponse(
                 audit.getId(),
                 audit.getUserId(),
                 audit.getAction(),
                 audit.getIpAddress(),
                 audit.getUserAgent(),
                 audit.getCreatedAt()
-        ));
-
-        return ResponseEntity.ok(responsePage);
+        );
     }
 }

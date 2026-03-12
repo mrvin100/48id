@@ -24,4 +24,18 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             @Param("from") Instant from,
             @Param("to") Instant to,
             Pageable pageable);
+
+    @Query("""
+            SELECT a FROM AuditLog a
+            WHERE a.userId = :userId
+              AND a.action LIKE 'LOGIN%'
+              AND (:from IS NULL OR a.createdAt >= :from)
+              AND (:to IS NULL OR a.createdAt <= :to)
+            ORDER BY a.createdAt DESC
+            """)
+    Page<AuditLog> findLoginHistory(
+            @Param("userId") UUID userId,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            Pageable pageable);
 }
