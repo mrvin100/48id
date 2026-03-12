@@ -1,12 +1,10 @@
-package io.k48.fortyeightid.audit;
+package io.k48.fortyeightid.auth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.k48.fortyeightid.Application;
 import io.k48.fortyeightid.audit.internal.AuditLog;
 import io.k48.fortyeightid.audit.internal.AuditLogRepository;
-import io.k48.fortyeightid.auth.internal.AuthService;
-import io.k48.fortyeightid.auth.internal.ChangePasswordRequest;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.internal.UserRepository;
