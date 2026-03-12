@@ -29,7 +29,8 @@ docs/
 ├── integration-guides/
 │   └── getting-started.md
 ├── developer-guide/
-│   └── contributing.md
+│   ├── contributing.md
+│   └── story-implementation-workflow.md
 ├── deployment/
 │   └── overview.md
 ├── security/
@@ -74,6 +75,7 @@ docs/
 - [Deployment guide](deployment/overview.md)
 - [Testing guide](testing/overview.md)
 - [Developer guide](developer-guide/contributing.md)
+- [Story implementation workflow](developer-guide/story-implementation-workflow.md)
 - [Glossary](glossary.md)
 
 ## Documentation principles
