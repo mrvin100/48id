@@ -9,10 +9,12 @@ import static org.mockito.Mockito.verify;
 
 import io.k48.fortyeightid.TestcontainersConfiguration;
 import io.k48.fortyeightid.auth.EmailPort;
+import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.internal.RoleRepository;
 import io.k48.fortyeightid.identity.internal.UserRepository;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +45,16 @@ class ActivationFlowIntegrationTest {
 
     @MockBean
     private EmailPort emailService;
+
+    @BeforeEach
+    void setUp() {
+        roleRepository.findByName("STUDENT")
+                .orElseGet(() -> {
+                    var role = new Role();
+                    role.setName("STUDENT");
+                    return roleRepository.save(role);
+                });
+    }
 
     @Test
     void csvImport_createsUserAsPendingAndTriggersActivationEmail() {
