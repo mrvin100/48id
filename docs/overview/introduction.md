@@ -21,7 +21,7 @@ Without 48ID, every K48 application would need to implement its own authenticati
 ### Authentication
 - Matricule-based login for K48 students and administrators
 - JWT access tokens (15-minute expiry, RS256 signed)
-- Refresh tokens (7-day expiry, stored in Redis)
+- Refresh tokens (1-day expiry, stored in Redis)
 - Password reset via email
 
 ### Authorization
@@ -114,19 +114,19 @@ Without 48ID, every K48 application would need to implement its own authenticati
 
 1. **Request API Key**: Contact K48 administration
 2. **Test Authentication**: Use Swagger UI to test endpoints
-3. **Integrate**: Follow the [Integration Guide](../INTEGRATION_GUIDE.md)
+3. **Integrate**: Follow the [Integration Guide](../../INTEGRATION_GUIDE.md)
 
 ## Documentation Navigation
 
-- **New to 48ID?** Start with [Quick Start](overview/quickstart.md)
-- **Integrating an application?** See [Integration Guides](integration/getting-started.md)
-- **Admin user?** See [Admin Operations](admin/overview.md)
-- **Deploying?** See [Deployment Guide](deployment/overview.md)
+- **New to 48ID?** Start with [Quick Start](./quickstart.md)
+- **Integrating an application?** See [Integration Guides](../integration/getting-started.md)
+- **Admin user?** See [Admin Operations](../admin/overview.md)
+- **Deploying?** See [Deployment Guide](../deployment/overview.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 
-48ID is licensed under the K48 License. See [LICENSE](../LICENSE) for details.
+48ID is licensed under the K48 License. See [LICENSE](../../LICENSE) for details.

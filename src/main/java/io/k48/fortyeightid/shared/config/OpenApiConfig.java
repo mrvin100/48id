@@ -22,13 +22,16 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        // Build servers list from configuration
+        // Build servers list from configuration, skipping blank entries
         List<Server> servers = new ArrayList<>();
         for (String serverUrl : openApiServers.split(",")) {
-            servers.add(new Server().url(serverUrl.trim()));
+            String trimmed = serverUrl.trim();
+            if (!trimmed.isEmpty()) {
+                servers.add(new Server().url(trimmed));
+            }
         }
         
-        // Add localhost by default if not already present
+        // Add localhost by default if no valid servers were configured
         if (servers.isEmpty()) {
             servers.add(new Server().url("http://localhost:8080").description("Local development server"));
         }

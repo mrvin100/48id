@@ -90,7 +90,6 @@ io.k48.fortyeightid
 │   ├── AuditLogResponse.java
 │   ├── ChangeRoleRequest.java
 │   ├── ChangeStatusRequest.java
-│   ├── CreateApiKeyRequest.java
 │   └── UpdateUserRequest.java
 │
 ├── audit/                   # Audit Logging
@@ -100,8 +99,6 @@ io.k48.fortyeightid
 │   ├── AuditContext.java
 │   ├── AuditContextAspect.java
 │   ├── AuditEvent.java
-│   ├── AuditLog.java
-│   ├── AuditLogRepository.java
 │   └── AuditService.java
 │
 ├── provisioning/            # CSV Import & Bulk Operations
@@ -248,7 +245,7 @@ External App              48ID                    PostgreSQL    Redis
 | `REDIS_PORT` | Redis port | `6379` |
 | `JWT_ISSUER` | JWT issuer URI | `http://localhost:8080` |
 | `JWT_ACCESS_TOKEN_EXPIRY` | Access token TTL (seconds) | `900` (15 min) |
-| `JWT_REFRESH_TOKEN_EXPIRY` | Refresh token TTL (seconds) | `604800` (7 days) |
+| `JWT_REFRESH_TOKEN_EXPIRY` | Refresh token TTL (seconds) | `86400` (1 day) |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
 | `MAIL_HOST` | SMTP host | `localhost` |
 | `MAIL_PORT` | SMTP port | `1025` |
@@ -259,6 +256,6 @@ See `src/main/resources/application.properties` for full configuration.
 
 ## Next Steps
 
-- [System Architecture](architecture/system.md) - Detailed system design
-- [Database Schema](architecture/database.md) - Database structure
-- [Security Architecture](architecture/security.md) - Security design
+- [System Architecture](../architecture/system.md) - Detailed system design
+- [Database Schema](../architecture/database.md) - Database structure
+- [Security Architecture](../architecture/security.md) - Security design

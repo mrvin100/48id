@@ -136,7 +136,7 @@ curl http://localhost:8080/api/v1/me \
 
 ## Next Steps
 
-- Read the [Integration Guide](../INTEGRATION_GUIDE.md) for external application integration
+- Read the [Integration Guide](../integration/getting-started.md) for external application integration
 - Explore the [API Reference](../api/overview.md) for all available endpoints
 - Review [Security Documentation](../security/overview.md) for security best practices
 

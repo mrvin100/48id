@@ -169,7 +169,7 @@ All dates use ISO 8601 format:
 
 ## Next Steps
 
-- [Authentication API](api/authentication.md) - Login, logout, token management
-- [User Management API](api/user-management.md) - User CRUD operations
-- [Admin API](api/admin.md) - Administrative operations
-- [Error Handling](api/errors.md) - Error response format
+- [Authentication API](authentication.md) - Login, logout, token management
+- [User Management API](user-management.md) - User CRUD operations
+- [Admin API](admin.md) - Administrative operations
+- [Error Handling](errors.md) - Error response format

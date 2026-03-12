@@ -216,8 +216,11 @@ async function validateMatricule(matricule) {
 **429 Too Many Requests**
 ```json
 {
-  "error": "Too Many Requests",
-  "message": "Rate limit exceeded."
+  "type": "https://48id.k48.io/errors/rate-limit-exceeded",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded. Please retry after the specified time.",
+  "instance": "/api/v1/auth/login"
 }
 ```
 
@@ -315,6 +318,7 @@ async function logApiUsage(endpoint, statusCode) {
 class FortyEightIdService {
   constructor(apiBaseUrl) {
     this.apiBaseUrl = apiBaseUrl;
+    this.accessToken = null; // Store in memory, not localStorage
   }
 
   async login(matricule, password) {
@@ -330,17 +334,21 @@ class FortyEightIdService {
     }
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
+    // Store access token in memory (not localStorage for security)
+    this.accessToken = data.access_token;
+    // Refresh token should be set as HttpOnly cookie by server
+    // Do NOT store refresh token in localStorage
     
     return data;
   }
 
   async getCurrentUser() {
-    const token = localStorage.getItem('access_token');
+    if (!this.accessToken) {
+      throw new Error('Not authenticated');
+    }
     
     const response = await fetch(`${this.apiBaseUrl}/me`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { 'Authorization': `Bearer ${this.accessToken}` }
     });
 
     if (!response.ok) {
@@ -353,6 +361,8 @@ class FortyEightIdService {
 
 export const fortyEightId = new FortyEightIdService('http://localhost:8080/api/v1');
 ```
+
+**Security Note:** Access tokens are stored in memory (lost on page refresh) for security. For production, implement token refresh via HttpOnly cookies or use a backend-for-frontend pattern.
 
 ### Spring Boot Backend
 
