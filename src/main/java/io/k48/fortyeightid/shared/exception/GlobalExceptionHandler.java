@@ -51,6 +51,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(AccountLockedException.class)
+    ProblemDetail handleAccountLocked(AccountLockedException ex) {
+        log.error("Account locked", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Account Locked");
+        problem.setType(URI.create("https://48id.k48.io/errors/account-locked"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "ACCOUNT_LOCKED");
+        problem.setProperty("remainingSeconds", ex.getRemainingSeconds());
+        return problem;
+    }
 
     @ExceptionHandler(UserNotFoundException.class)
     ProblemDetail handleUserNotFound(UserNotFoundException ex) {
@@ -94,6 +105,51 @@ public class GlobalExceptionHandler {
                 .map(fe -> new ViolationDetail(fe.getField(), fe.getDefaultMessage()))
                 .toList();
         problem.setProperty("violations", violations);
+        return problem;
+    }
+
+    @ExceptionHandler(PasswordPolicyViolationException.class)
+    ProblemDetail handlePasswordPolicyViolation(PasswordPolicyViolationException ex) {
+        log.error("Password policy violation", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Password Policy Violation");
+        problem.setType(URI.create("https://48id.k48.io/errors/password-policy"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "PASSWORD_POLICY_VIOLATION");
+        problem.setProperty("violations", ex.getViolations());
+        return problem;
+    }
+
+    @ExceptionHandler(NewPasswordSameAsCurrentException.class)
+    ProblemDetail handleNewPasswordSameAsCurrent(NewPasswordSameAsCurrentException ex) {
+        log.error("New password same as current", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Password Reuse Not Allowed");
+        problem.setType(URI.create("https://48id.k48.io/errors/password-reuse"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "NEW_PASSWORD_SAME_AS_CURRENT");
+        return problem;
+    }
+
+    @ExceptionHandler(ResetTokenInvalidException.class)
+    ProblemDetail handleResetTokenInvalid(ResetTokenInvalidException ex) {
+        log.error("Reset token invalid", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Reset Token Invalid");
+        problem.setType(URI.create("https://48id.k48.io/errors/reset-token-invalid"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "RESET_TOKEN_INVALID");
+        return problem;
+    }
+
+    @ExceptionHandler(ResetTokenExpiredException.class)
+    ProblemDetail handleResetTokenExpired(ResetTokenExpiredException ex) {
+        log.error("Reset token expired", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Reset Token Expired");
+        problem.setType(URI.create("https://48id.k48.io/errors/reset-token-expired"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "RESET_TOKEN_EXPIRED");
         return problem;
     }
 
@@ -177,8 +233,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
-        var problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
         problem.setTitle("Internal Server Error");
         problem.setType(URI.create("https://48id.k48.io/errors/internal"));
         problem.setProperty("timestamp", Instant.now());

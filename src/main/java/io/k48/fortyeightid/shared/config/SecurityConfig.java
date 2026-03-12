@@ -1,13 +1,14 @@
 package io.k48.fortyeightid.shared.config;
 
 import jakarta.servlet.Filter;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,9 +19,6 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -64,7 +62,13 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/.well-known/jwks.json").permitAll()
-                .requestMatchers(apiPrefix + "/auth/login", apiPrefix + "/auth/refresh").permitAll()
+                .requestMatchers(
+                        apiPrefix + "/auth/login",
+                        apiPrefix + "/auth/refresh",
+                        apiPrefix + "/auth/forgot-password",
+                        apiPrefix + "/auth/reset-password",
+                        apiPrefix + "/auth/activate-account"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
@@ -93,7 +97,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -20,11 +21,22 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private final ApiKeyManagementPort apiKeyService;
 
+    @Value("${fortyeightid.api.prefix:/api/v1}")
+    private String apiPrefix = "/api/v1";
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        var uri = request.getRequestURI();
+        if ((apiPrefix + "/auth/verify-token").equals(uri)) {
+            return false;
+        }
+        return !(uri.startsWith(apiPrefix + "/users/") && (uri.endsWith("/identity") || uri.endsWith("/exists")));
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // Only process if no authentication already set (JWT takes priority)
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
@@ -32,24 +44,28 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         var apiKey = request.getHeader(API_KEY_HEADER);
         if (apiKey == null || apiKey.isBlank()) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Missing X-API-Key header\",\"message\":\"Requires X-API-Key header. Contact K48 admin to obtain an API key.\"}");
+            writeForbidden(response, "Missing X-API-Key header", "Requires X-API-Key header. Contact K48 admin to obtain an API key.");
             return;
         }
 
         var validKey = apiKeyService.validate(apiKey);
-        if (validKey.isPresent()) {
-            var key = validKey.get();
-            var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            
-            // Update lastUsedAt timestamp
-            apiKeyService.updateLastUsed(key);
-        } else {
+        if (validKey.isEmpty()) {
             log.debug("Invalid API key presented");
+            writeForbidden(response, "Invalid X-API-Key header", "The supplied API key is invalid or inactive.");
+            return;
         }
 
+        var key = validKey.get();
+        var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        apiKeyService.updateLastUsed(key);
+
         filterChain.doFilter(request, response);
+    }
+
+    private void writeForbidden(HttpServletResponse response, String error, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}");
     }
 }

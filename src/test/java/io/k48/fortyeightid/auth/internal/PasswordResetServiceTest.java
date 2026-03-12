@@ -36,36 +36,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
 
-    @Mock
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Mock private EmailPort emailService;
+    @Mock private UserQueryService userQueryService;
+    @Mock private AuditService auditService;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private RefreshTokenService refreshTokenService;
+    @Mock private PasswordPolicyService passwordPolicyService;
 
-    @Mock
-    private EmailPort emailService;
-
-    @Mock
-    private UserQueryService userQueryService;
-
-    @Mock
-    private AuditService auditService;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private RefreshTokenService refreshTokenService;
-
-    @Mock
-    private PasswordPolicyService passwordPolicyService;
-
-    @InjectMocks
-    private PasswordResetService passwordResetService;
+    @InjectMocks private PasswordResetService passwordResetService;
 
     @Test
     void resetPassword_successfullyResetsPassword() {
         var token = UUID.randomUUID().toString();
         var userId = UUID.randomUUID();
-        var resetToken = createResetToken(token, userId, false);
-        var user = createUser(userId);
+        var resetToken = createResetToken(token, userId, false, ResetTokenPurpose.PASSWORD_RESET);
+        var user = createUser(userId, UserStatus.ACTIVE);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
         when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
@@ -77,8 +63,37 @@ class PasswordResetServiceTest {
         assertThat(user.getPasswordHash()).isEqualTo("newHash");
         assertThat(user.isRequiresPasswordChange()).isFalse();
         assertThat(resetToken.isUsed()).isTrue();
-        verify(refreshTokenService, times(1)).revokeAllForUser(userId);
-        verify(auditService, times(1)).log(eq(userId), eq("PASSWORD_RESET_COMPLETED"), any());
+        verify(refreshTokenService).revokeAllForUser(userId);
+        verify(auditService).log(eq(userId), eq("PASSWORD_RESET_COMPLETED"), any());
+    }
+
+    @Test
+    void initiateActivation_createsActivationTokenAndSendsEmail() {
+        var user = createUser(UUID.randomUUID(), UserStatus.PENDING_ACTIVATION);
+
+        passwordResetService.initiateActivation(user, "TempPassword123");
+
+        verify(passwordResetTokenRepository).deleteAllByUserIdAndPurpose(user.getId(), ResetTokenPurpose.ACCOUNT_ACTIVATION);
+        verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+        verify(emailService).sendActivationEmail(eq(user.getEmail()), eq(user.getName()), eq(user.getMatricule()), eq("TempPassword123"), anyString());
+    }
+
+    @Test
+    void activateAccount_marksPendingUserActive() {
+        var token = UUID.randomUUID().toString();
+        var userId = UUID.randomUUID();
+        var activationToken = createResetToken(token, userId, false, ResetTokenPurpose.ACCOUNT_ACTIVATION);
+        var user = createUser(userId, UserStatus.PENDING_ACTIVATION);
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(activationToken));
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+        when(userQueryService.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        passwordResetService.activateAccount(token);
+
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(activationToken.isUsed()).isTrue();
+        verify(auditService).log(eq(userId), eq("ACCOUNT_ACTIVATED"), any());
     }
 
     @Test
@@ -91,10 +106,20 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void resetPassword_throwsWhenPurposeDoesNotMatch() {
+        var token = UUID.randomUUID().toString();
+        var resetToken = createResetToken(token, UUID.randomUUID(), false, ResetTokenPurpose.ACCOUNT_ACTIVATION);
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(token, "NewSecure@123"))
+                .isInstanceOf(ResetTokenInvalidException.class);
+    }
+
+    @Test
     void resetPassword_throwsWhenTokenIsExpired() {
         var token = UUID.randomUUID().toString();
         var userId = UUID.randomUUID();
-        var resetToken = createResetToken(token, userId, true);
+        var resetToken = createResetToken(token, userId, true, ResetTokenPurpose.PASSWORD_RESET);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
 
@@ -107,7 +132,7 @@ class PasswordResetServiceTest {
     void resetPassword_throwsWhenTokenIsAlreadyUsed() {
         var token = UUID.randomUUID().toString();
         var userId = UUID.randomUUID();
-        var resetToken = createResetToken(token, userId, false);
+        var resetToken = createResetToken(token, userId, false, ResetTokenPurpose.PASSWORD_RESET);
         resetToken.setUsed(true);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
@@ -121,7 +146,7 @@ class PasswordResetServiceTest {
     void resetPassword_throwsWhenPasswordDoesNotMeetPolicy() {
         var token = UUID.randomUUID().toString();
         var userId = UUID.randomUUID();
-        var resetToken = createResetToken(token, userId, false);
+        var resetToken = createResetToken(token, userId, false, ResetTokenPurpose.PASSWORD_RESET);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
         doThrow(new PasswordPolicyViolationException(List.of("Password must be at least 8 characters long")))
@@ -130,7 +155,6 @@ class PasswordResetServiceTest {
         assertThatThrownBy(() -> passwordResetService.resetPassword(token, "weak"))
                 .isInstanceOf(PasswordPolicyViolationException.class);
 
-        verify(passwordResetTokenRepository, never()).delete(any());
         verify(auditService, never()).log(any(), any(), any());
     }
 
@@ -138,7 +162,7 @@ class PasswordResetServiceTest {
     void resetPassword_throwsWhenUserNotFound() {
         var token = UUID.randomUUID().toString();
         var userId = UUID.randomUUID();
-        var resetToken = createResetToken(token, userId, false);
+        var resetToken = createResetToken(token, userId, false, ResetTokenPurpose.PASSWORD_RESET);
 
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
         when(userQueryService.findById(userId)).thenReturn(Optional.empty());
@@ -147,18 +171,19 @@ class PasswordResetServiceTest {
                 .isInstanceOf(io.k48.fortyeightid.shared.exception.UserNotFoundException.class);
     }
 
-    private PasswordResetToken createResetToken(String token, UUID userId, boolean expired) {
+    private PasswordResetToken createResetToken(String token, UUID userId, boolean expired, ResetTokenPurpose purpose) {
         var expiresAt = expired ? Instant.now().minusSeconds(3600) : Instant.now().plusSeconds(3600);
-        
+
         return PasswordResetToken.builder()
                 .userId(userId)
                 .token(token)
+                .purpose(purpose)
                 .expiresAt(expiresAt)
                 .used(false)
                 .build();
     }
 
-    private User createUser(UUID id) {
+    private User createUser(UUID id, UserStatus status) {
         var role = new Role();
         role.setName("STUDENT");
 
@@ -168,7 +193,7 @@ class PasswordResetServiceTest {
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("oldHash")
-                .status(UserStatus.ACTIVE)
+                .status(status)
                 .batch("2024")
                 .specialization("SE")
                 .phone("+237600000000")

@@ -1,177 +1,80 @@
-# Quick Start
+# Quick start
 
-Get up and running with 48ID in minutes.
+## 1. Prerequisites
 
-## Prerequisites
+- Java 21
+- Docker and Docker Compose
+- SMTP server for email delivery, or a local mail catcher for development
 
-- Java 21 or higher
-- Docker Desktop installed
-- Git installed
-
-## Installation
-
-### 1. Clone Repository
+## 2. Start local dependencies
 
 ```bash
-git clone https://github.com/mrvin100/48id.git
-cd 48id
-```
-
-### 2. Start Infrastructure
-
-```bash
-docker compose up -d
+docker compose up -d postgres redis
 ```
 
 This starts:
-- PostgreSQL 15 on port 5432
-- Redis 7 on port 6379
 
-### 3. Configure Environment
+- PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`
 
-Copy the example environment file:
+## 3. Configure environment variables
 
-```bash
-cp .env.example .env
-```
+Copy `.env.example` and supply values appropriate for your environment.
 
-Edit `.env` with your configuration:
+Minimum variables for local development:
 
-```bash
-# Database
+```env
 DATABASE_URL=jdbc:postgresql://localhost:5432/fortyeightid
 DATABASE_USERNAME=fortyeightid
 DATABASE_PASSWORD=fortyeightid
-
-# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# JWT Configuration
 JWT_ISSUER=http://localhost:8080
-JWT_ACCESS_TOKEN_EXPIRY=900
-JWT_REFRESH_TOKEN_EXPIRY=604800
-
-# Mail Configuration
+JWT_RSA_PUBLIC_KEY=classpath:keys/public.pem
+JWT_RSA_PRIVATE_KEY=classpath:keys/private.pem
 MAIL_HOST=localhost
 MAIL_PORT=1025
-
-# CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000
+MAIL_FROM=no-reply@48id.k48.io
+MAIL_LOGIN_URL=http://localhost:3000/login
+MAIL_ACTIVATION_URL=http://localhost:3000/activate-account
+MAIL_RESET_PASSWORD_URL=http://localhost:3000/reset-password
 ```
 
-### 4. Run Application
+## 4. Run the application
+
+Linux or macOS:
 
 ```bash
 ./gradlew bootRun
 ```
 
-### 5. Verify Installation
+Windows:
 
-Open http://localhost:8080/actuator/health
-
-Expected response:
-```json
-{
-  "status": "UP",
-  "components": {
-    "db": { "status": "UP" },
-    "redis": { "status": "UP" }
-  }
-}
+```powershell
+.\gradlew.bat bootRun
 ```
 
-## Access Documentation
+## 5. Verify startup
 
-### Swagger UI
-http://localhost:8080/api/v1/docs
+Useful endpoints:
 
-### API Specification
-http://localhost:8080/api-docs
+- Health: `GET /actuator/health`
+- Swagger UI: `GET /api/v1/docs`
+- OpenAPI JSON: `GET /api-docs`
+- JWKS: `GET /.well-known/jwks.json`
 
-## First API Calls
+## 6. Typical local workflow
 
-### 1. Health Check
+1. Start dependencies with Docker Compose.
+2. Run the application.
+3. Open Swagger UI.
+4. Provision users through the admin import API or seed data.
+5. Activate a provisioned account from the activation email token.
+6. Log in and test protected endpoints.
 
-```bash
-curl http://localhost:8080/actuator/health
-```
+## 7. Suggested reading order
 
-### 2. Login (Admin User)
-
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "matricule": "K48-ADMIN-001",
-    "password": "admin-password"
-  }'
-```
-
-Response:
-```json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "uuid-here",
-  "token_type": "Bearer",
-  "expires_in": 900,
-  "requires_password_change": false,
-  "user": {
-    "id": "uuid",
-    "matricule": "K48-ADMIN-001",
-    "name": "Admin User",
-    "role": "ADMIN",
-    "batch": null,
-    "specialization": null
-  }
-}
-```
-
-### 3. Get Current User Profile
-
-```bash
-curl http://localhost:8080/api/v1/me \
-  -H "Authorization: Bearer <access_token>"
-```
-
-## Next Steps
-
-- Read the [Integration Guide](../integration/getting-started.md) for external application integration
-- Explore the [API Reference](../api/overview.md) for all available endpoints
-- Review [Security Documentation](../security/overview.md) for security best practices
-
-## Troubleshooting
-
-### Port Already in Use
-
-If ports 5432, 6379, or 8080 are in use:
-
-1. Stop conflicting services
-2. Or modify `docker-compose.yml` and `application.properties`
-
-### Database Connection Failed
-
-Ensure PostgreSQL is running:
-
-```bash
-docker compose ps
-```
-
-Restart if needed:
-
-```bash
-docker compose restart postgres
-```
-
-### Application Won't Start
-
-Check logs:
-
-```bash
-./gradlew bootRun --stacktrace
-```
-
-Common issues:
-- Database not running
-- Invalid environment variables
-- Port conflicts
+- [Architecture](architecture.md)
+- [Authentication flows](../authentication/flows.md)
+- [API overview](../api/overview.md)
+- [Integration guide](../integration-guides/getting-started.md)

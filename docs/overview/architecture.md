@@ -1,261 +1,152 @@
-# Architecture Overview
+# Architecture
 
-48ID uses a modular architecture built on Spring Boot 3 and Spring Modulith.
+## System purpose
 
-## System Architecture
+48ID provides centralized identity capabilities for the K48 ecosystem. Its MVP responsibility is to authenticate users, issue and validate JWTs, manage user lifecycle state, and expose controlled administrative and integration APIs.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Client Applications                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
-│  │   48Hub     │  │    LP48     │  │  Future Applications    │ │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTPS
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      48ID Platform                               │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │                    API Layer                               │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │ │
-│  │  │   Auth      │  │   User      │  │     Admin       │   │ │
-│  │  │ Controller  │  │ Controller  │  │   Controller    │   │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │ │
-│  └───────────────────────────────────────────────────────────┘ │
-│                              │                                  │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │                   Service Layer                            │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │ │
-│  │  │   Auth      │  │   User      │  │     Audit       │   │ │
-│  │  │  Service    │  │  Service    │  │    Service      │   │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │ │
-│  └───────────────────────────────────────────────────────────┘ │
-│                              │                                  │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │                 Persistence Layer                          │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │ │
-│  │  │ PostgreSQL  │  │   Redis     │  │    Flyway       │   │ │
-│  │  │  (JPA)      │  │  (Cache)    │  │  (Migrations)   │   │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │ │
-│  └───────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
+## High-level architecture
 
-## Module Structure
+```mermaid
+flowchart LR
+    subgraph Clients
+        U1[Student-facing application]
+        U2[Admin application]
+        U3[Trusted backend application]
+    end
 
-48ID uses Spring Modulith for modular architecture:
+    subgraph Service[48ID Spring Boot application]
+        AUTH[auth]
+        ID[identity]
+        ADMIN[admin]
+        PROV[provisioning]
+        AUDIT[audit]
+        SHARED[shared]
+    end
 
-```
-io.k48.fortyeightid
-├── auth/                    # Authentication & Authorization
-│   ├── internal/
-│   │   ├── AuthService.java
-│   │   ├── JwtTokenService.java
-│   │   ├── RefreshTokenService.java
-│   │   └── PasswordResetService.java
-│   ├── ApiKey.java
-│   ├── ApiKeyAuthFilter.java
-│   ├── ApiKeyManagementPort.java
-│   ├── EmailPort.java
-│   ├── JwtAuthenticationFilter.java
-│   ├── JwksController.java
-│   ├── LoginAttemptService.java
-│   ├── PasswordPolicyService.java
-│   └── PasswordResetPort.java
-│
-├── identity/                # User Identity Management
-│   ├── internal/
-│   │   ├── UserService.java
-│   │   ├── UserQueryService.java
-│   │   ├── MeController.java
-│   │   └── UserRepository.java
-│   ├── Role.java
-│   ├── User.java
-│   ├── UserQueryService.java
-│   ├── UserRoleService.java
-│   ├── UserStatus.java
-│   ├── UserStatusService.java
-│   ├── UserUpdateService.java
-│   └── UserProvisioningPort.java
-│
-├── admin/                   # Administrative Operations
-│   ├── internal/
-│   │   ├── AdminUserService.java
-│   │   ├── AdminApiKeyController.java
-│   │   ├── AdminUserController.java
-│   │   └── AdminAuditController.java
-│   ├── CreateApiKeyRequest.java
-│   ├── ApiKeyResponse.java
-│   ├── AuditLogResponse.java
-│   ├── ChangeRoleRequest.java
-│   ├── ChangeStatusRequest.java
-│   └── UpdateUserRequest.java
-│
-├── audit/                   # Audit Logging
-│   ├── internal/
-│   │   ├── AuditLog.java
-│   │   └── AuditLogRepository.java
-│   ├── AuditContext.java
-│   ├── AuditContextAspect.java
-│   ├── AuditEvent.java
-│   └── AuditService.java
-│
-├── provisioning/            # CSV Import & Bulk Operations
-│   ├── internal/
-│   │   ├── CsvImportService.java
-│   │   ├── CsvImportController.java
-│   │   ├── CsvRow.java
-│   │   └── CsvImportResult.java
-│   └── package-info.java
-│
-├── shared/                  # Shared Components
-│   ├── config/
-│   │   ├── OpenApiConfig.java
-│   │   ├── RateLimitConfig.java
-│   │   ├── RateLimitFilter.java
-│   │   ├── SecurityConfig.java
-│   │   ├── CacheControlFilter.java
-│   │   └── ProblemDetail*.java
-│   └── exception/
-│       ├── GlobalExceptionHandler.java
-│       └── *Exception.java
-│
-└── Application.java
+    U1 --> AUTH
+    U1 --> ID
+    U2 --> ADMIN
+    U2 --> PROV
+    U2 --> AUDIT
+    U3 --> AUTH
+    U3 --> ID
+
+    AUTH --> ID
+    ADMIN --> ID
+    PROV --> ID
+    ADMIN --> AUTH
+    AUTH --> AUDIT
+    ADMIN --> AUDIT
+    PROV --> AUDIT
+
+    AUTH --> PG[(PostgreSQL)]
+    ID --> PG
+    ADMIN --> PG
+    AUDIT --> PG
+    Service --> REDIS[(Redis)]
+    AUTH --> SMTP[SMTP provider]
 ```
 
-## Module Dependencies
+## Spring Modulith structure
 
-```
-┌────────────────────────────────────────────────────────┐
-│                      admin                              │
-│  (depends on: auth, identity, audit)                   │
-└────────────────────────────────────────────────────────┘
-         │
-┌────────┴────────┐
-│                 │
-▼                 ▼
-┌────────────────────────────────┐  ┌──────────────────────────┐
-│            auth                 │  │        identity          │
-│  (depends on: audit, shared)   │  │  (depends on: audit)     │
-└────────────────────────────────┘  └──────────────────────────┘
-         │                                   │
-         └──────────────┬────────────────────┘
-                        │
-                        ▼
-              ┌─────────────────┐
-              │      audit       │
-              │  (depends on:    │
-              │     shared)      │
-              └─────────────────┘
-                        │
-                        ▼
-              ┌─────────────────┐
-              │     shared       │
-              │  (no dependencies)│
-              └─────────────────┘
-```
+The codebase uses Spring Modulith to express domain modules and validate module boundaries.
 
-## Key Design Decisions
+### Modules
 
-### 1. API-First Design
-- All functionality exposed via REST APIs
-- OpenAPI documentation auto-generated
-- Consistent error responses (RFC 7807)
+- `auth`: login, refresh, logout, JWT signing, JWKS, activation, password reset, API key verification
+- `identity`: user aggregate, role and status state, self-service profile operations, provisioning boundary
+- `admin`: privileged management of users, audit log access, API key administration
+- `provisioning`: CSV import workflow for onboarding users in bulk
+- `audit`: audit event persistence and query support
+- `shared`: cross-cutting configuration, exception handling, rate limiting, OpenAPI, filters
 
-### 2. Security by Default
-- All endpoints secured by default
-- Explicit permit-all configuration
-- Method-level security with `@PreAuthorize`
+### Boundary rules
 
-### 3. Stateless Authentication
-- JWT access tokens (RS256 signed)
-- Refresh tokens stored in Redis
-- No server-side session state
+The intended interaction model is:
 
-### 4. Modular Architecture
-- Spring Modulith enforces module boundaries
-- Each module has clear responsibilities
-- Public APIs via Port interfaces
+- `identity` owns the user aggregate and user state transitions.
+- `auth` depends on `identity` through public services and ports.
+- `admin` coordinates privileged workflows and delegates domain changes to `identity` and `auth` ports.
+- `provisioning` uses `identity` for user creation and `auth` for activation initialization.
+- `audit` is consumed by other modules but remains focused on audit persistence and retrieval.
 
-### 5. Audit Everything
-- All authentication events logged
-- Admin actions tracked
-- Queryable audit log
+## Internal communication
 
-## Data Flow Examples
+Cross-module communication is synchronous in-process service invocation through Spring beans and exposed ports. There is no event bus in the MVP.
 
-### Login Flow
+## Authentication architecture
 
-```
-Client                    48ID                    PostgreSQL    Redis
-  │                        │                         │           │
-  │──POST /auth/login────▶│                         │           │
-  │                        │──Find User─────────────▶│           │
-  │                        │◀─User Data──────────────│           │
-  │                        │──Validate Password──────▶│           │
-  │                        │                         │           │
-  │                        │──Generate JWT────────────▶│           │
-  │                        │──Store Refresh Token───────────────▶│
-  │◀─Access + Refresh─────│                         │           │
-  │   Token                │                         │           │
+48ID uses JWT bearer access tokens and refresh tokens.
+
+- access tokens are used by clients for protected endpoints
+- refresh tokens are used to rotate sessions and obtain new access tokens
+- JWKS is published at `/.well-known/jwks.json`
+- trusted backend integrations use API keys for token verification and public identity lookups
+
+### Login and first activation sequence
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant App as Admin app
+    participant API as 48ID
+    participant Mail as Mail server
+    participant User
+
+    Admin->>App: Import CSV
+    App->>API: POST /api/v1/admin/users/import
+    API->>API: Create users as PENDING_ACTIVATION
+    API->>API: Generate activation token + temp password
+    API->>Mail: Send activation email
+    Mail-->>User: Activation email
+    User->>App: Open activation link
+    App->>API: POST /api/v1/auth/activate-account
+    API->>API: Set status ACTIVE
+    User->>App: Login with temporary password
+    App->>API: POST /api/v1/auth/login
+    API-->>App: access_token + refresh_token + requires_password_change=true
+    User->>App: Submit new password
+    App->>API: POST /api/v1/auth/change-password
 ```
 
-### Token Refresh Flow
+## Authorization model
 
-```
-Client                    48ID                    PostgreSQL    Redis
-  │                        │                         │           │
-  │──POST /auth/refresh──▶│                         │           │
-  │   (Refresh Token)      │                         │           │
-  │                        │──Validate Token───────────────────▶│
-  │                        │◀─Valid/Invalid────────────────────│
-  │                        │                         │           │
-  │                        │──Rotate Refresh Token────────────▶│
-  │                        │──Generate New JWT────────▶│           │
-  │◀─New Access +─────────│                         │           │
-  │   Refresh Token        │                         │           │
-```
+Authorization is role-based.
 
-### External App Token Verification
+- `ADMIN` can access admin and provisioning operations.
+- `STUDENT` can access self-service operations.
+- `API_CLIENT` is assigned dynamically to authenticated API keys and is required for trusted integration endpoints.
 
-```
-External App              48ID                    PostgreSQL    Redis
-  │                        │                         │           │
-  │──POST /auth/verify───▶│                         │           │
-  │   (JWT + API Key)      │                         │           │
-  │                        │──Validate API Key─────────────────▶│
-  │                        │◀─Valid────────────────────────────│
-  │                        │                         │           │
-  │                        │──Validate JWT────────────▶│           │
-  │                        │◀─Claims───────────────────│           │
-  │◀─User Claims──────────│                         │           │
-```
+Method-level authorization uses `@PreAuthorize` on privileged controllers.
 
-## Configuration
+## Database architecture
 
-### Environment Variables
+The primary store is PostgreSQL.
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/fortyeightid` |
-| `DATABASE_USERNAME` | Database username | `fortyeightid` |
-| `DATABASE_PASSWORD` | Database password | `fortyeightid` |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `JWT_ISSUER` | JWT issuer URI | `http://localhost:8080` |
-| `JWT_ACCESS_TOKEN_EXPIRY` | Access token TTL (seconds) | `900` (15 min) |
-| `JWT_REFRESH_TOKEN_EXPIRY` | Refresh token TTL (seconds) | `86400` (1 day) |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
-| `MAIL_HOST` | SMTP host | `localhost` |
-| `MAIL_PORT` | SMTP port | `1025` |
+Main persisted concepts include:
 
-### Application Properties
+- users
+- roles and user-role relationships
+- refresh tokens
+- password/activation tokens
+- API keys
+- audit logs
 
-See `src/main/resources/application.properties` for full configuration.
+Schema evolution is managed by Flyway migrations in `src/main/resources/db/migration`.
 
-## Next Steps
+## Infrastructure components
 
-- [System Architecture](../architecture/system.md) - Detailed system design
-- [Database Schema](../architecture/database.md) - Database structure
-- [Security Architecture](../architecture/security.md) - Security design
+- **PostgreSQL**: system of record for identities, tokens, API keys, and audits
+- **Redis**: supporting infrastructure for rate limiting and cache-like concerns in the MVP environment
+- **SMTP**: transactional email delivery for activation and password reset workflows
+- **Springdoc OpenAPI**: interactive API documentation
+
+## Deployment model
+
+The repository includes:
+
+- Dockerfile for container image build
+- Docker Compose for local PostgreSQL and Redis
+- GitHub Actions CI workflow for build and test validation
+
+For production, deploy the application as a stateless container with external PostgreSQL, Redis, and SMTP services.

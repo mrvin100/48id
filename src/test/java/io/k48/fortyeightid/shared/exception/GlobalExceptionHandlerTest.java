@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.DisabledException;
 
 class GlobalExceptionHandlerTest {
 
@@ -29,6 +30,20 @@ class GlobalExceptionHandlerTest {
         var problem = handler.handleDuplicateEmail(new DuplicateEmailException("a@b.com"));
         assertThat(problem.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(problem.getTitle()).isEqualTo("Duplicate Email");
+    }
+
+    @Test
+    void handleDisabledPendingActivation_returns401AndCode() {
+        var problem = handler.handleDisabled(new DisabledException("Account not activated"));
+        assertThat(problem.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(problem.getProperties()).containsEntry("code", "ACCOUNT_NOT_ACTIVATED");
+    }
+
+    @Test
+    void handleResetTokenExpired_returns400AndCode() {
+        var problem = handler.handleResetTokenExpired(new ResetTokenExpiredException("expired"));
+        assertThat(problem.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(problem.getProperties()).containsEntry("code", "RESET_TOKEN_EXPIRED");
     }
 
     @Test

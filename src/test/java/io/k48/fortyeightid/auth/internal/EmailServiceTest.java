@@ -31,94 +31,67 @@ class EmailServiceTest {
 
     @Test
     void sendActivationEmail_sendsHtmlEmailWithTemplate() {
-        // Given
         ReflectionTestUtils.setField(emailService, "fromAddress", "no-reply@48id.k48.io");
         ReflectionTestUtils.setField(emailService, "loginUrl", "http://localhost:3000/login");
+        ReflectionTestUtils.setField(emailService, "activationBaseUrl", "http://localhost:3000/activate-account");
 
-        String toEmail = "student@k48.io";
-        String userName = "Ama Owusu";
-        String matricule = "K48-2024-001";
-        String temporaryPassword = "TempPass123!";
+        emailService.sendActivationEmail(
+                "student@k48.io",
+                "Ama Owusu",
+                "K48-2024-001",
+                "TempPass123!",
+                "activation-token"
+        );
 
-        // When
-        emailService.sendActivationEmail(toEmail, userName, matricule, temporaryPassword);
-
-        // Then
         verify(mailSender, times(1)).send(messageCaptor.capture());
-        
-        // Verify the captor captured a MimeMessagePreparator
-        MimeMessagePreparator capturedPreparator = messageCaptor.getValue();
-        assertThat(capturedPreparator).isNotNull();
+        assertThat(messageCaptor.getValue()).isNotNull();
     }
 
     @Test
     void sendActivationEmail_escapesHtmlInUserData() {
-        // Given
         ReflectionTestUtils.setField(emailService, "fromAddress", "no-reply@48id.k48.io");
         ReflectionTestUtils.setField(emailService, "loginUrl", "http://localhost:3000/login");
+        ReflectionTestUtils.setField(emailService, "activationBaseUrl", "http://localhost:3000/activate-account");
 
-        String toEmail = "student@k48.io";
-        String userName = "Ama <script>alert('xss')</script> Owusu";
-        String matricule = "K48-2024-001";
-        String temporaryPassword = "TempPass123!";
+        emailService.sendActivationEmail(
+                "student@k48.io",
+                "Ama <script>alert('xss')</script> Owusu",
+                "K48-2024-001",
+                "TempPass123!",
+                "activation-token"
+        );
 
-        // When
-        emailService.sendActivationEmail(toEmail, userName, matricule, temporaryPassword);
-
-        // Then
-        verify(mailSender, times(1)).send(any(MimeMessagePreparator.class));
-        // The HTML should be escaped to prevent XSS
-    }
-
-    @Test
-    void sendActivationEmail_logsErrorOnMailException() {
-        // Given
-        ReflectionTestUtils.setField(emailService, "fromAddress", "no-reply@48id.k48.io");
-        ReflectionTestUtils.setField(emailService, "loginUrl", "http://localhost:3000/login");
-
-        String toEmail = "student@k48.io";
-        String userName = "Ama Owusu";
-        String matricule = "K48-2024-001";
-        String temporaryPassword = "TempPass123!";
-
-        // When - mailSender will throw exception (mock behavior not set up)
-        emailService.sendActivationEmail(toEmail, userName, matricule, temporaryPassword);
-
-        // Then - should not throw, error should be logged (verified manually in implementation)
         verify(mailSender, times(1)).send(any(MimeMessagePreparator.class));
     }
 
     @Test
-    void sendActivationEmail_usesCorrectFromAddress() {
-        // Given
-        String customFromAddress = "noreply@k48.io";
-        ReflectionTestUtils.setField(emailService, "fromAddress", customFromAddress);
+    void sendActivationEmail_usesConfiguredSender() {
+        ReflectionTestUtils.setField(emailService, "fromAddress", "noreply@k48.io");
         ReflectionTestUtils.setField(emailService, "loginUrl", "http://localhost:3000/login");
+        ReflectionTestUtils.setField(emailService, "activationBaseUrl", "http://localhost:3000/activate-account");
 
-        String toEmail = "student@k48.io";
-        String userName = "Ama Owusu";
-        String matricule = "K48-2024-001";
-        String temporaryPassword = "TempPass123!";
+        emailService.sendActivationEmail(
+                "student@k48.io",
+                "Ama Owusu",
+                "K48-2024-001",
+                "TempPass123!",
+                "activation-token"
+        );
 
-        // When
-        emailService.sendActivationEmail(toEmail, userName, matricule, temporaryPassword);
-
-        // Then
         verify(mailSender, times(1)).send(any(MimeMessagePreparator.class));
     }
 
     @Test
     void sendActivationEmail_isAnnotatedWithAsync() throws NoSuchMethodException {
-        // Given
         var method = EmailService.class.getDeclaredMethod(
                 "sendActivationEmail",
+                String.class,
                 String.class,
                 String.class,
                 String.class,
                 String.class
         );
 
-        // Then
         assertThat(method.isAnnotationPresent(org.springframework.scheduling.annotation.Async.class))
                 .as("sendActivationEmail should be annotated with @Async")
                 .isTrue();
@@ -126,24 +99,16 @@ class EmailServiceTest {
 
     @Test
     void sendPasswordResetEmail_usesSimpleMailMessage() {
-        // Given
         ReflectionTestUtils.setField(emailService, "fromAddress", "no-reply@48id.k48.io");
         ReflectionTestUtils.setField(emailService, "resetPasswordBaseUrl", "http://localhost:3000/reset-password");
 
-        String toEmail = "student@k48.io";
-        String userName = "Ama Owusu";
-        String resetToken = "abc123-def456";
+        emailService.sendPasswordResetEmail("student@k48.io", "Ama Owusu", "abc123-def456");
 
-        // When
-        emailService.sendPasswordResetEmail(toEmail, userName, resetToken);
-
-        // Then
         verify(mailSender, times(1)).send(any(org.springframework.mail.SimpleMailMessage.class));
     }
 
     @Test
     void sendPasswordResetEmail_isAnnotatedWithAsync() throws NoSuchMethodException {
-        // Given
         var method = EmailService.class.getDeclaredMethod(
                 "sendPasswordResetEmail",
                 String.class,
@@ -151,7 +116,6 @@ class EmailServiceTest {
                 String.class
         );
 
-        // Then
         assertThat(method.isAnnotationPresent(org.springframework.scheduling.annotation.Async.class))
                 .as("sendPasswordResetEmail should be annotated with @Async")
                 .isTrue();
@@ -159,7 +123,6 @@ class EmailServiceTest {
 
     @Test
     void emailPortInterface_isImplemented() {
-        // Then
         assertThat(emailService).isInstanceOf(EmailPort.class);
     }
 }

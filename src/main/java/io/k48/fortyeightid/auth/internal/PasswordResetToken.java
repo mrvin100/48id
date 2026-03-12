@@ -2,6 +2,8 @@ package io.k48.fortyeightid.auth.internal;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +34,11 @@ class PasswordResetToken {
 
     @Column(nullable = false, unique = true, length = 512)
     private String token;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purpose", nullable = false, length = 30)
+    @Builder.Default
+    private ResetTokenPurpose purpose = ResetTokenPurpose.PASSWORD_RESET;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
