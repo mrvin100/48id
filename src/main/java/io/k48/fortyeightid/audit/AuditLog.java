@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.audit.internal;
+package io.k48.fortyeightid.audit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
