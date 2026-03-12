@@ -3,6 +3,7 @@ package io.k48.fortyeightid.auth.internal;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
+import io.k48.fortyeightid.shared.exception.ApiKeyNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,10 +66,14 @@ class ApiKeyService implements ApiKeyManagementPort {
     @Override
     @Transactional
     public void revokeApiKey(UUID apiKeyId, UUID revokedBy) {
+        var apiKey = apiKeyRepository.findById(apiKeyId)
+                .orElseThrow(() -> new ApiKeyNotFoundException("API key not found: " + apiKeyId));
+
         apiKeyRepository.deleteById(apiKeyId);
 
         auditService.log(revokedBy, "API_KEY_REVOKED", Map.of(
-                "apiKeyId", apiKeyId.toString()
+                "apiKeyId", apiKeyId.toString(),
+                "appName", apiKey.getAppName()
         ));
     }
 
@@ -77,6 +82,29 @@ class ApiKeyService implements ApiKeyManagementPort {
     public void updateLastUsed(ApiKey apiKey) {
         apiKey.updateLastUsed();
         apiKeyRepository.save(apiKey);
+    }
+
+    @Override
+    @Transactional
+    public ApiKeyRotationResult rotateApiKey(UUID apiKeyId, UUID rotatedBy) {
+        var apiKey = apiKeyRepository.findById(apiKeyId)
+                .orElseThrow(() -> new ApiKeyNotFoundException("API key not found: " + apiKeyId));
+
+        // Generate new key
+        var rawKey = generateSecureKey();
+        var newHash = sha256(rawKey);
+
+        // Update the key hash
+        apiKey.setKeyHash(newHash);
+        apiKeyRepository.save(apiKey);
+
+        // Log audit event
+        auditService.log(rotatedBy, "API_KEY_ROTATED", Map.of(
+                "apiKeyId", apiKeyId.toString(),
+                "appName", apiKey.getAppName()
+        ));
+
+        return new ApiKeyRotationResult(rawKey, apiKey.getAppName(), Instant.now());
     }
 
     private String generateSecureKey() {
