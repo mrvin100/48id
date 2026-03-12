@@ -47,7 +47,7 @@ class AdminUserController {
 
     @PutMapping("/{id}")
     ResponseEntity<UserResponse> updateUser(@PathVariable UUID id,
-                                            @RequestBody UpdateUserRequest request,
+                                            @Valid @RequestBody UpdateUserRequest request,
                                             @AuthenticationPrincipal String adminId) {
         var updated = adminUserService.updateUser(id, request, UUID.fromString(adminId));
         return ResponseEntity.ok(UserResponse.from(updated));

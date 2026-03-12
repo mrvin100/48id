@@ -2,6 +2,7 @@ package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ class IdentityController {
     private final UserQueryService userQueryService;
 
     @PostMapping("/verify-token")
-    ResponseEntity<VerifyTokenResponse> verifyToken(@RequestBody VerifyTokenRequest request) {
+    ResponseEntity<VerifyTokenResponse> verifyToken(@Valid @RequestBody VerifyTokenRequest request) {
         try {
             // Validate JWT signature and expiration
             Jwt jwt = jwtTokenService.validateToken(request.token());
