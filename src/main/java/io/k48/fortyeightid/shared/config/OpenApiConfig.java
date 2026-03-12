@@ -8,6 +8,7 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,11 +17,22 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
-    @Value("${fortyeightid.api.prefix:/api/v1}")
-    private String apiPrefix;
+    @Value("${fortyeightid.openapi.servers:http://localhost:8080}")
+    private String openApiServers;
 
     @Bean
     public OpenAPI customOpenAPI() {
+        // Build servers list from configuration
+        List<Server> servers = new ArrayList<>();
+        for (String serverUrl : openApiServers.split(",")) {
+            servers.add(new Server().url(serverUrl.trim()));
+        }
+        
+        // Add localhost by default if not already present
+        if (servers.isEmpty()) {
+            servers.add(new Server().url("http://localhost:8080").description("Local development server"));
+        }
+
         return new OpenAPI()
                 .info(new Info()
                         .title("48ID API")
@@ -32,13 +44,7 @@ public class OpenApiConfig {
                         .license(new License()
                                 .name("K48 License")
                                 .url("https://k48.io/license")))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:8080")
-                                .description("Local development server"),
-                        new Server()
-                                .url("https://48id.k48.io")
-                                .description("Production server")))
+                .servers(servers)
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
@@ -52,8 +58,8 @@ public class OpenApiConfig {
                                 .in(SecurityScheme.In.HEADER)
                                 .name("X-API-Key")
                                 .description("Enter API key for external applications")))
-                .addSecurityItem(new SecurityRequirement()
-                        .addList("bearer-jwt")
-                        .addList("api-key"));
+                // Add separate security requirements for OR logic (either JWT OR API key)
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .addSecurityItem(new SecurityRequirement().addList("api-key"));
     }
 }

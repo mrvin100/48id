@@ -1,72 +1,207 @@
-# 48id
+# 48ID
 
-Centralized identity and authentication platform for the K48 ecosystem
+**Centralized Identity and Authentication Platform for the K48 Ecosystem**
+
+[![Build Status](https://github.com/mrvin100/48id/actions/workflows/ci.yml/badge.svg)](https://github.com/mrvin100/48id/actions)
+[![License](https://img.shields.io/badge/license-K48-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://adoptium.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+
+## Overview
+
+48ID is the unified identity backbone of the K48 ecosystem — a standalone, API-first Identity Provider (IdP) that eliminates the need for every student-built application to implement its own authentication system.
+
+**Key Benefits:**
+- ✅ Single Sign-On (SSO) across all K48 platforms
+- ✅ Enterprise-grade security (JWT, rate limiting, audit logging)
+- ✅ Developer-friendly integration (< 1 day using Swagger)
+- ✅ Centralized user management and audit trail
 
 ## Quick Start
 
 ### Prerequisites
 - Java 21+
-- Docker and Docker Compose
-- PostgreSQL 15+
-- Redis 7+
+- Docker & Docker Compose
+- Git
 
-### Running Locally
+### 1. Clone Repository
+```bash
+git clone https://github.com/mrvin100/48id.git
+cd 48id
+```
 
-1. Start infrastructure (PostgreSQL + Redis):
-   ```bash
-   docker compose up -d
-   ```
+### 2. Start Infrastructure
+```bash
+docker compose up -d
+```
 
-2. Run the application:
-   ```bash
-   ./gradlew bootRun
-   ```
+### 3. Run Application
+```bash
+./gradlew bootRun
+```
 
-3. Access Swagger UI: http://localhost:8080/swagger-ui.html
+### 4. Access Swagger UI
+Open http://localhost:8080/api/v1/docs
+
+## Key Features (MVP)
+
+### Authentication
+- Matricule-based login for K48 students and administrators
+- JWT access tokens (15 min, RS256 signed)
+- Refresh tokens (7 days, Redis-backed)
+- Password reset via email
+
+### Authorization
+- Role-based access control (ADMIN, STUDENT)
+- API key authentication for external applications
+- Method-level security enforcement
+
+### User Management
+- CSV bulk import for student provisioning
+- User profile management
+- Account status management (ACTIVE, SUSPENDED, PENDING_ACTIVATION)
+- Profile completion tracking
+
+### Security
+- Rate limiting on authentication endpoints
+- Account lockout after failed attempts
+- Password policy enforcement
+- Comprehensive audit logging
+
+### Developer Experience
+- OpenAPI/Swagger documentation
+- Consistent error responses (RFC 7807)
+- Integration guides and examples
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| Backend Framework | Spring Boot 3 |
+| Security | Spring Security 6 |
+| Architecture | Spring Modulith |
+| Database | PostgreSQL 15 |
+| Cache | Redis 7 |
+| JWT | Nimbus JOSE + JWT |
+| Rate Limiting | Bucket4j |
+| Documentation | SpringDoc OpenAPI |
+| Build Tool | Gradle |
+| Containerization | Docker |
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    48ID Platform                         │
+├─────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
+│  │   Auth   │  │ Identity │  │  Admin   │  │  Audit  │ │
+│  │  Module  │  │  Module  │  │  Module  │  │ Module  │ │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────┘ │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │           Shared Module (Common Services)         │  │
+│  └──────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────┤
+│  PostgreSQL (Users, Roles, Audit)  │  Redis (Tokens)   │
+└─────────────────────────────────────────────────────────┘
+```
+
+See [Architecture Documentation](docs/overview/architecture.md) for details.
 
 ## Documentation
 
-- **[Integration Guide](INTEGRATION_GUIDE.md)** — How to integrate your application with 48ID
-- **Swagger UI** — Interactive API documentation at http://localhost:8080/swagger-ui.html
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
-## API Authentication
+- **[Overview](docs/README.md)** - Documentation index
+- **[Quick Start](docs/overview/quickstart.md)** - Get started in minutes
+- **[Architecture](docs/overview/architecture.md)** - System design
+- **[API Reference](docs/api/overview.md)** - Complete API documentation
+- **[Integration Guide](docs/integration/getting-started.md)** - Integrate your app
+- **[Admin Operations](docs/admin/overview.md)** - Admin user guide
+- **[Deployment](docs/deployment/overview.md)** - Deploy to production
 
-### API Key Authentication (Server-to-Server)
+**Swagger UI:** http://localhost:8080/api/v1/docs
 
-For external applications (48Hub, LP48, etc.):
+## Integration Example
 
+### 1. Request API Key
+Contact K48 administration to obtain an API key.
+
+### 2. Verify User Token
 ```bash
-curl -X GET http://localhost:8080/api/v1/admin/api-keys \
+curl -X POST http://localhost:8080/api/v1/auth/verify-token \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "user-jwt-token"}'
+```
+
+### 3. Get User Identity
+```bash
+curl -X GET http://localhost:8080/api/v1/users/{user-id}/identity \
   -H "X-API-Key: your-api-key"
 ```
 
-**Important:** All API key-protected endpoints require the `X-API-Key` header. See [Integration Guide](INTEGRATION_GUIDE.md) for details.
+See [Integration Guide](docs/integration/getting-started.md) for complete examples.
 
-### JWT Bearer Token Authentication (User Authentication)
+## Configuration
 
-For end-user authentication:
+### Environment Variables
 
-```bash
-curl -X GET http://localhost:8080/api/v1/me \
-  -H "Authorization: Bearer <jwt-token>"
-```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/fortyeightid` |
+| `DATABASE_USERNAME` | Database username | `fortyeightid` |
+| `DATABASE_PASSWORD` | Database password | `fortyeightid` |
+| `REDIS_HOST` | Redis host | `localhost` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `JWT_ISSUER` | JWT issuer URI | `http://localhost:8080` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
 
-## Development
+See [Configuration Guide](docs/deployment/configuration.md) for full configuration options.
 
-### Build
-```bash
-./gradlew build
-```
+## Testing
 
-### Run Tests
+### Run All Tests
 ```bash
 ./gradlew test
 ```
 
-### Database Migrations
+### Run Specific Test
+```bash
+./gradlew test --tests "io.k48.fortyeightid.auth.internal.AuthServiceTest"
+```
 
-Flyway migrations are located in `src/main/resources/db/migration/`. Migrations run automatically on startup.
+### Test Coverage
+```bash
+./gradlew jacocoTestReport
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m "Add amazing feature"`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-K48 Ecosystem — All rights reserved.
+48ID is licensed under the K48 License. See [LICENSE](LICENSE) for details.
+
+## Support
+
+- **Documentation:** [docs/](docs/)
+- **Swagger UI:** http://localhost:8080/api/v1/docs
+- **Email:** support@k48.io
+
+## Acknowledgments
+
+48ID is part of the K48 (KFOKAM48) ecosystem, providing centralized identity management for all K48 platforms.
+
+---
+
+**Built with ❤️ for the K48 Ecosystem**
