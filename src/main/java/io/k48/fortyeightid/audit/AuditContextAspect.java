@@ -1,6 +1,5 @@
 package io.k48.fortyeightid.audit;
 
-import io.k48.fortyeightid.audit.internal.AuditLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.UUID;
@@ -37,13 +36,16 @@ public class AuditContextAspect {
         // Execute the method
         Object result = joinPoint.proceed();
 
-        // Extract user ID from method parameters or result
+        // Extract user ID from security context or method parameters
         UUID userId = extractUserId(joinPoint, auditEvent.userIdExpression());
 
         // Log the audit event
         if (userId != null) {
             auditService.log(userId, auditEvent.type(), Map.<String, Object>of(), 
                 auditContext.getIpAddress(), auditContext.getUserAgent());
+        } else {
+            log.warn("Audit event '{}' skipped: could not extract user ID. IP={}, UserAgent={}", 
+                auditEvent.type(), auditContext.getIpAddress(), auditContext.getUserAgent());
         }
 
         return result;
@@ -53,18 +55,9 @@ public class AuditContextAspect {
         var requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes) {
             var request = ((ServletRequestAttributes) requestAttributes).getRequest();
-            auditContext.setIpAddress(extractIpAddress(request));
+            auditContext.setIpAddress(IpUtils.extractIpAddress(request));
             auditContext.setUserAgent(request.getHeader("User-Agent"));
         }
-    }
-
-    private String extractIpAddress(HttpServletRequest request) {
-        var xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            // Take the leftmost IP (original client)
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 
     private UUID extractUserId(ProceedingJoinPoint joinPoint, String userIdExpression) {

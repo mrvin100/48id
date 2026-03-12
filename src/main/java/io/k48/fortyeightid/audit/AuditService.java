@@ -38,7 +38,7 @@ public class AuditService {
                 if (requestAttributes instanceof ServletRequestAttributes) {
                     var request = ((ServletRequestAttributes) requestAttributes).getRequest();
                     if (capturedIp == null) {
-                        capturedIp = extractIpAddress(request);
+                        capturedIp = IpUtils.extractIpAddress(request);
                     }
                     if (capturedUserAgent == null) {
                         capturedUserAgent = request.getHeader("User-Agent");
@@ -57,14 +57,5 @@ public class AuditService {
         } catch (Exception ex) {
             log.error("Failed to write audit log: action={}, userId={}", action, userId, ex);
         }
-    }
-
-    private String extractIpAddress(jakarta.servlet.http.HttpServletRequest request) {
-        var xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            // Take the leftmost IP (original client)
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
