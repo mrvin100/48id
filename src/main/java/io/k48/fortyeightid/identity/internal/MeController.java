@@ -2,6 +2,7 @@ package io.k48.fortyeightid.identity.internal;
 
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ class MeController {
     @PutMapping
     ResponseEntity<MeResponse> updateProfile(
             @AuthenticationPrincipal String userId,
-            @RequestBody UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
         var updated = userService.updateProfile(UUID.fromString(userId), request);
         return ResponseEntity.ok(MeResponse.from(updated));
     }
