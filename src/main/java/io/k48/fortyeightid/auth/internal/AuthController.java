@@ -1,5 +1,12 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -14,42 +21,84 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("${fortyeightid.api.prefix}/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "User authentication and token management endpoints")
 class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticate user with matricule and password. Returns JWT access token and refresh token.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Login successful",
+            content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request body",
+            content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"Validation failed\"}"))),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials",
+            content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"Matricule or password is incorrect.\"}")))
+    })
     ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token", description = "Exchange refresh token for new access token. Rotates refresh token.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
+            content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token",
+            content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"Refresh token invalid\"}")))
+    })
     ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "User logout", description = "Revoke refresh token and terminate session.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Logout successful"),
+        @ApiResponse(responseCode = "401", description = "Invalid refresh token")
+    })
     ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @PostMapping("/change-password")
+    @Operation(summary = "Change password", description = "Authenticated user changes their password. Requires current password.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid current password or new password doesn't meet policy",
+            content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"Password does not meet policy requirements\"}"))),
+        @ApiResponse(responseCode = "401", description = "Invalid current password or not authenticated")
+    })
     ResponseEntity<Void> changePassword(
-            @AuthenticationPrincipal String userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(UUID.fromString(userId), request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/forgot-password")
+    @Operation(summary = "Request password reset", description = "Send password reset email to user. Always returns 200 to prevent email enumeration.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "If email is registered, reset email sent",
+            content = @Content(schema = @Schema(implementation = ForgotPasswordResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid email format")
+    })
     ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.handleForgotPassword(request.email());
         return ResponseEntity.ok(new ForgotPasswordResponse("If this email is registered, a password reset link has been sent."));
     }
 
     @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Reset password using token from email. Invalidates all refresh tokens.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Password reset successful",
+            content = @Content(schema = @Schema(implementation = ResetPasswordResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid or expired token, or password doesn't meet policy",
+            content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"This reset link has expired\"}")))
+    })
     ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request.token(), request.newPassword());
         return ResponseEntity.ok(new ResetPasswordResponse("Password reset successful. Please log in with your new password."));
