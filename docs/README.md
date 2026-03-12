@@ -1,76 +1,88 @@
-# 48ID Documentation
+# 48ID documentation
 
-Comprehensive documentation for the 48ID Identity and Authentication Platform.
+This documentation set covers the implemented MVP for 48ID.
 
-## Documentation Structure
+## Documentation map
+
+```text
+docs/
+├── README.md
+├── overview/
+│   ├── introduction.md
+│   ├── architecture.md
+│   └── quickstart.md
+├── api/
+│   ├── overview.md
+│   ├── authentication.md
+│   ├── identity-management.md
+│   ├── admin-operations.md
+│   ├── public-integration.md
+│   └── errors.md
+├── authentication/
+│   └── flows.md
+├── authorization/
+│   └── model.md
+├── identity-management/
+│   └── overview.md
+├── admin-operations/
+│   └── overview.md
+├── integration-guides/
+│   └── getting-started.md
+├── developer-guide/
+│   ├── contributing.md
+│   └── story-implementation-workflow.md
+├── deployment/
+│   └── overview.md
+├── security/
+│   └── overview.md
+├── testing/
+│   └── overview.md
+└── glossary.md
+```
+
+## Start here
+
+- [Introduction](overview/introduction.md)
+- [Quick start](overview/quickstart.md)
+- [Architecture](overview/architecture.md)
+- [API overview](api/overview.md)
+- [Integration guide](integration-guides/getting-started.md)
+
+## Section guide
 
 ### Overview
+
 - [Introduction](overview/introduction.md)
-- [Quick Start](overview/quickstart.md)
-- [Architecture Overview](overview/architecture.md)
+- [Architecture](overview/architecture.md)
+- [Quick start](overview/quickstart.md)
 
-### Architecture
-- [System Architecture](architecture/system.md)
-- [Spring Modulith Structure](architecture/modulith.md)
-- [Database Schema](architecture/database.md)
-- [Security Architecture](architecture/security.md)
+### API reference
 
-### API Reference
-- [API Overview](api/overview.md)
+- [API overview](api/overview.md)
 - [Authentication API](api/authentication.md)
-- [User Management API](api/user-management.md)
-- [Admin API](api/admin.md)
-- [Identity Verification API](api/identity-verification.md)
-- [Error Handling](api/errors.md)
+- [Identity management API](api/identity-management.md)
+- [Admin operations API](api/admin-operations.md)
+- [Public integration API](api/public-integration.md)
+- [Error model](api/errors.md)
 
-### Authentication Guide
-- [Authentication Flows](authentication/flows.md)
-- [JWT Tokens](authentication/jwt.md)
-- [Refresh Tokens](authentication/refresh-tokens.md)
-- [Password Management](authentication/password-management.md)
-- [Session Management](authentication/sessions.md)
+### Concepts and operations
 
-### Integration Guides
-- [Getting Started](integration/getting-started.md)
-- [External Application Integration](integration/external-apps.md)
-- [API Key Authentication](integration/api-keys.md)
-- [SDK Examples](integration/examples.md)
-
-### Admin Operations
-- [Admin Overview](admin/overview.md)
-- [User Management](admin/user-management.md)
-- [CSV Import](admin/csv-import.md)
-- [Audit Logs](admin/audit-logs.md)
-
-### Deployment
-- [Deployment Overview](deployment/overview.md)
-- [Docker Deployment](deployment/docker.md)
-- [Environment Configuration](deployment/configuration.md)
-- [Production Checklist](deployment/production.md)
-
-### Security
-- [Security Overview](security/overview.md)
-- [Rate Limiting](security/rate-limiting.md)
-- [Password Policy](security/password-policy.md)
-- [Audit Logging](security/audit-logging.md)
-
-### Testing
-- [Testing Overview](testing/overview.md)
-- [Unit Tests](testing/unit-tests.md)
-- [Integration Tests](testing/integration-tests.md)
-
-### Glossary
+- [Authentication flows](authentication/flows.md)
+- [Authorization model](authorization/model.md)
+- [Identity management guide](identity-management/overview.md)
+- [Admin operations guide](admin-operations/overview.md)
+- [Security guide](security/overview.md)
+- [Deployment guide](deployment/overview.md)
+- [Testing guide](testing/overview.md)
+- [Developer guide](developer-guide/contributing.md)
+- [Story implementation workflow](developer-guide/story-implementation-workflow.md)
 - [Glossary](glossary.md)
 
-## Quick Links
+## Documentation principles
 
-- **Swagger UI**: `/api/v1/docs`
-- **API Spec**: `/api-docs`
-- **Health Check**: `/actuator/health`
-- **GitHub Repository**: [mrvin100/48id](https://github.com/mrvin100/48id)
+This documentation is intentionally:
 
-## Support
-
-For questions or issues:
-- Email: support@k48.io
-- Documentation: This documentation
+- implementation-aligned with the current branch
+- scoped to the MVP only
+- modular, so new product areas can be added later
+- written for both integrators and maintainers

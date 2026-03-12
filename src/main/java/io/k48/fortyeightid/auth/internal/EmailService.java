@@ -21,10 +21,15 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor
 class EmailService implements EmailPort {
 
+    private static final String ACTIVATION_EMAIL_TEMPLATE = "templates/activation-email.html";
+
     private final JavaMailSender mailSender;
 
     @Value("${fortyeightid.mail.from:no-reply@48id.k48.io}")
     private String fromAddress;
+
+    @Value("${fortyeightid.mail.activation-url:http://localhost:3000/activate-account}")
+    private String activationBaseUrl;
 
     @Value("${fortyeightid.mail.reset-password-url:http://localhost:3000/reset-password}")
     private String resetPasswordBaseUrl;
@@ -32,19 +37,17 @@ class EmailService implements EmailPort {
     @Value("${fortyeightid.mail.login-url:http://localhost:3000/login}")
     private String loginUrl;
 
-    private static final String ACTIVATION_EMAIL_TEMPLATE = "templates/activation-email.html";
-
     @Override
     @Async
-    public void sendActivationEmail(String toEmail, String userName, String matricule, String temporaryPassword) {
+    public void sendActivationEmail(String toEmail, String userName, String matricule, String temporaryPassword, String activationToken) {
         try {
-            String htmlContent = loadAndProcessTemplate(ACTIVATION_EMAIL_TEMPLATE, userName, matricule, temporaryPassword);
+            String htmlContent = loadAndProcessTemplate(
+                    ACTIVATION_EMAIL_TEMPLATE, userName, matricule, temporaryPassword, activationToken);
 
             MimeMessagePreparator messagePreparator = mimeMessage -> {
                 mimeMessage.setFrom(new InternetAddress(fromAddress));
-                mimeMessage.setRecipients(jakarta.mail.Message.RecipientType.TO,
-                        InternetAddress.parse(toEmail));
-                mimeMessage.setSubject("K48 ID — Welcome! Your account has been created");
+                mimeMessage.setRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(toEmail));
+                mimeMessage.setSubject("K48 ID — Activate your account");
                 mimeMessage.setText(htmlContent, StandardCharsets.UTF_8.name(), "html");
             };
 
@@ -85,8 +88,8 @@ class EmailService implements EmailPort {
         }
     }
 
-    private String loadAndProcessTemplate(String templatePath, String userName, String matricule, String temporaryPassword)
-            throws IOException {
+    private String loadAndProcessTemplate(String templatePath, String userName, String matricule,
+                                          String temporaryPassword, String activationToken) throws IOException {
         var resource = new ClassPathResource(templatePath);
         String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
 
@@ -94,7 +97,8 @@ class EmailService implements EmailPort {
                 .replace("{{userName}}", escapeHtml(userName))
                 .replace("{{matricule}}", escapeHtml(matricule))
                 .replace("{{temporaryPassword}}", escapeHtml(temporaryPassword))
-                .replace("{{loginUrl}}", escapeHtml(loginUrl));
+                .replace("{{loginUrl}}", escapeHtml(loginUrl))
+                .replace("{{activationUrl}}", escapeHtml(activationBaseUrl + "?token=" + activationToken));
     }
 
     private String escapeHtml(String input) {

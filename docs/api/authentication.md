@@ -1,38 +1,42 @@
 # Authentication API
 
-Complete reference for authentication endpoints.
+This page documents the user authentication and credential lifecycle endpoints.
 
-## POST /auth/login
+## `POST /api/v1/auth/login`
 
-Authenticate user with matricule and password.
+Authenticate a user with matricule and password.
 
-### Request
+### Authentication
 
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
-```
+Public endpoint.
+
+### Rate limit
+
+- 5 requests per 15 minutes per matricule
+- global IP rate limiting also applies
+
+### Request body
 
 ```json
 {
   "matricule": "K48-2024-001",
-  "password": "SecurePass@123"
+  "password": "TempPass123!"
 }
 ```
 
-### Response (200 OK)
+### Response `200`
 
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "550e8400-e29b-41d4-a716-446655440000",
+  "access_token": "<jwt>",
+  "refresh_token": "<refresh-token>",
   "token_type": "Bearer",
   "expires_in": 900,
-  "requires_password_change": false,
+  "requires_password_change": true,
   "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "id": "bca4f2f6-3fef-4bc4-8d32-9ee6bd3728e3",
     "matricule": "K48-2024-001",
-    "name": "John Doe",
+    "name": "Ama Owusu",
     "role": "STUDENT",
     "batch": "2024",
     "specialization": "Software Engineering"
@@ -40,142 +44,120 @@ Content-Type: application/json
 }
 ```
 
-### Error Responses
+### Error responses
 
-**400 Bad Request** - Validation Error
-```json
-{
-  "type": "https://48id.k48.io/errors/validation",
-  "title": "Validation Error",
-  "status": 400,
-  "detail": "Validation failed",
-  "violations": [
-    {
-      "field": "matricule",
-      "message": "Matricule is required"
-    }
-  ]
-}
-```
-
-**401 Unauthorized** - Invalid Credentials
-```json
-{
-  "type": "https://48id.k48.io/errors/invalid-credentials",
-  "title": "Invalid Credentials",
-  "status": 401,
-  "detail": "Matricule or password is incorrect.",
-  "code": "INVALID_CREDENTIALS"
-}
-```
-
-**401 Unauthorized** - Account Suspended
-```json
-{
-  "type": "https://48id.k48.io/errors/account-disabled",
-  "title": "Account Disabled",
-  "status": 401,
-  "detail": "Your account has been suspended. Contact K48 administration.",
-  "code": "ACCOUNT_SUSPENDED"
-}
-```
-
-**423 Locked** - Account Locked
-```json
-{
-  "type": "https://48id.k48.io/errors/account-locked",
-  "title": "Account Locked",
-  "status": 423,
-  "detail": "Account temporarily locked due to too many failed attempts. Try again in 300 seconds.",
-  "code": "ACCOUNT_LOCKED"
-}
-```
-
-### Rate Limiting
-
-- 5 requests per 15 minutes per matricule
-- Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+- `400` validation failure
+- `401` invalid credentials
+- `401` `ACCOUNT_NOT_ACTIVATED`
+- `401` `ACCOUNT_SUSPENDED`
+- `401` `ACCOUNT_LOCKED`
+- `429` rate limit exceeded
 
 ---
 
-## POST /auth/refresh
+## `POST /api/v1/auth/refresh`
 
-Exchange refresh token for new access token.
+Rotate a refresh token and issue a new access token.
 
-### Request
+### Authentication
 
-```http
-POST /api/v1/auth/refresh
-Content-Type: application/json
-```
+Public endpoint.
+
+### Request body
 
 ```json
 {
-  "refresh_token": "550e8400-e29b-41d4-a716-446655440000"
+  "refresh_token": "<refresh-token>"
 }
 ```
 
-### Response (200 OK)
+### Response `200`
 
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "660e8400-e29b-41d4-a716-446655440001",
+  "access_token": "<jwt>",
+  "refresh_token": "<new-refresh-token>",
   "token_type": "Bearer",
   "expires_in": 900
 }
 ```
 
-**Note:** Refresh token is rotated on each use.
+### Error responses
 
-### Error Responses
-
-**401 Unauthorized** - Invalid Refresh Token
-```json
-{
-  "type": "https://48id.k48.io/errors/refresh-token-invalid",
-  "title": "Refresh Token Invalid",
-  "status": 401,
-  "detail": "Refresh token invalid",
-  "code": "REFRESH_TOKEN_INVALID"
-}
-```
+- `401` `REFRESH_TOKEN_INVALID`
 
 ---
 
-## POST /auth/logout
+## `POST /api/v1/auth/logout`
 
-Revoke refresh token and terminate session.
+Revoke the supplied refresh token.
 
-### Request
+### Authentication
 
-```http
-POST /api/v1/auth/logout
-Content-Type: application/json
-```
+Authenticated user token required.
+
+### Request body
 
 ```json
 {
-  "refresh_token": "550e8400-e29b-41d4-a716-446655440000"
+  "refresh_token": "<refresh-token>"
 }
 ```
 
-### Response (204 No Content)
+### Response `204`
 
-No response body.
+No body.
+
+### Error responses
+
+- `401` invalid or expired refresh token
 
 ---
 
-## POST /auth/forgot-password
+## `POST /api/v1/auth/change-password`
 
-Request password reset email.
+Change the current authenticated user's password.
 
-### Request
+### Authentication
 
-```http
-POST /api/v1/auth/forgot-password
-Content-Type: application/json
+Bearer token required.
+
+### Request body
+
+```json
+{
+  "currentPassword": "TempPass123!",
+  "newPassword": "NewSecure#2026"
+}
 ```
+
+### Response `200`
+
+No body.
+
+### Error responses
+
+- `400` validation failure
+- `400` `PASSWORD_POLICY_VIOLATION`
+- `400` `NEW_PASSWORD_SAME_AS_CURRENT`
+- `401` invalid current password
+
+---
+
+## `POST /api/v1/auth/forgot-password`
+
+Request a password reset email.
+
+### Authentication
+
+Public endpoint.
+
+### Rate limit
+
+- 3 requests per hour per email
+- global IP rate limiting also applies
+
+### Request body
 
 ```json
 {
@@ -183,7 +165,7 @@ Content-Type: application/json
 }
 ```
 
-### Response (200 OK)
+### Response `200`
 
 ```json
 {
@@ -191,47 +173,35 @@ Content-Type: application/json
 }
 ```
 
-**Note:** Always returns 200 to prevent email enumeration.
+### Notes
 
-### Error Responses
+This endpoint is enumeration-safe. It returns `200` even when no matching account exists.
 
-**400 Bad Request** - Invalid Email Format
-```json
-{
-  "type": "https://48id.k48.io/errors/validation",
-  "title": "Validation Error",
-  "status": 400,
-  "detail": "Validation failed",
-  "violations": [
-    {
-      "field": "email",
-      "message": "Invalid email format"
-    }
-  ]
-}
-```
+### Error responses
+
+- `400` invalid email format
+- `429` rate limit exceeded
 
 ---
 
-## POST /auth/reset-password
+## `POST /api/v1/auth/reset-password`
 
-Reset password using token from email.
+Reset a password using a password reset token.
 
-### Request
+### Authentication
 
-```http
-POST /api/v1/auth/reset-password
-Content-Type: application/json
-```
+Public endpoint.
+
+### Request body
 
 ```json
 {
-  "token": "uuid-from-email",
-  "newPassword": "NewSecure@456"
+  "token": "<password-reset-token>",
+  "newPassword": "NewSecure#2026"
 }
 ```
 
-### Response (200 OK)
+### Response `200`
 
 ```json
 {
@@ -239,151 +209,75 @@ Content-Type: application/json
 }
 ```
 
-### Error Responses
+### Error responses
 
-**400 Bad Request** - Invalid Token
+- `400` validation failure
+- `400` `RESET_TOKEN_INVALID`
+- `400` `RESET_TOKEN_EXPIRED`
+- `400` `PASSWORD_POLICY_VIOLATION`
+
+---
+
+## `POST /api/v1/auth/activate-account`
+
+Activate a provisioned account using the activation token delivered by email.
+
+### Authentication
+
+Public endpoint.
+
+### Request body
+
 ```json
 {
-  "type": "https://48id.k48.io/errors/reset-token-invalid",
-  "title": "Reset Token Invalid",
-  "status": 400,
-  "detail": "Invalid reset token.",
-  "code": "RESET_TOKEN_INVALID"
+  "token": "<activation-token>"
 }
 ```
 
-**400 Bad Request** - Expired Token
+### Response `200`
+
 ```json
 {
-  "type": "https://48id.k48.io/errors/reset-token-expired",
-  "title": "Reset Token Expired",
-  "status": 400,
-  "detail": "This reset link has expired. Please request a new one.",
-  "code": "RESET_TOKEN_EXPIRED"
+  "message": "Account activated successfully. You can now log in with your temporary password and change it on first login."
 }
 ```
 
-**400 Bad Request** - Password Policy Violation
+### Notes
+
+Activation changes the user status from `PENDING_ACTIVATION` to `ACTIVE`. The temporary password remains in force until the first successful login and password change.
+
+### Error responses
+
+- `400` validation failure
+- `400` `RESET_TOKEN_INVALID`
+- `400` `RESET_TOKEN_EXPIRED`
+- `401` if the account cannot be activated in its current state
+
+---
+
+## `GET /.well-known/jwks.json`
+
+Publish the JSON Web Key Set used to validate issued JWTs.
+
+### Authentication
+
+Public endpoint.
+
+### Response `200`
+
+Returns a standard JWKS document.
+
 ```json
 {
-  "type": "https://48id.k48.io/errors/password-policy-violation",
-  "title": "Password Policy Violation",
-  "status": 400,
-  "detail": "Password does not meet policy requirements",
-  "violations": [
+  "keys": [
     {
-      "field": "newPassword",
-      "message": "Password must be at least 8 characters long"
+      "kty": "RSA",
+      "kid": "...",
+      "use": "sig",
+      "alg": "RS256",
+      "n": "...",
+      "e": "AQAB"
     }
   ]
 }
 ```
-
----
-
-## POST /auth/change-password
-
-Change password (authenticated user).
-
-### Request
-
-```http
-POST /api/v1/auth/change-password
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-```
-
-```json
-{
-  "currentPassword": "OldPass@123",
-  "newPassword": "NewSecure@456"
-}
-```
-
-### Response (200 OK)
-
-No response body.
-
-### Error Responses
-
-**400 Bad Request** - Invalid Current Password
-```json
-{
-  "type": "https://48id.k48.io/errors/invalid-credentials",
-  "title": "Invalid Credentials",
-  "status": 400,
-  "detail": "Current password is incorrect.",
-  "code": "INVALID_CREDENTIALS"
-}
-```
-
-**400 Bad Request** - Same Password
-```json
-{
-  "type": "https://48id.k48.io/errors/same-password",
-  "title": "Same Password",
-  "status": 400,
-  "detail": "New password must be different from current password.",
-  "code": "NEW_PASSWORD_SAME_AS_CURRENT"
-}
-```
-
----
-
-## POST /auth/verify-token
-
-Verify JWT token (external applications).
-
-### Request
-
-```http
-POST /api/v1/auth/verify-token
-X-API-Key: <api_key>
-Content-Type: application/json
-```
-
-```json
-{
-  "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Response (200 OK) - Valid Token
-
-```json
-{
-  "valid": true,
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "matricule": "K48-2024-001",
-    "name": "John Doe",
-    "email": "john@k48.io",
-    "role": "STUDENT",
-    "batch": "2024",
-    "specialization": "Software Engineering"
-  }
-}
-```
-
-### Response (200 OK) - Invalid Token
-
-```json
-{
-  "valid": false,
-  "reason": "TOKEN_EXPIRED"
-}
-```
-
-**Possible reasons:**
-- `TOKEN_EXPIRED` - Token has expired
-- `TOKEN_INVALID` - Token signature invalid
-- `ACCOUNT_SUSPENDED` - User account suspended
-- `USER_NOT_FOUND` - User not found
-
----
-
-## Next Steps
-
-- [User Management API](user-management.md) - User CRUD operations
-- [Admin API](admin.md) - Administrative operations
-- [Identity Verification API](identity-verification.md) - External app verification

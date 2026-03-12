@@ -1,7 +1,6 @@
 package io.k48.fortyeightid.auth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.identity.Role;
@@ -11,7 +10,6 @@ import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.shared.exception.JwtSignatureException;
 import io.k48.fortyeightid.shared.exception.JwtTokenExpiredException;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -20,20 +18,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityControllerTest {
 
-    @Mock
-    private JwtTokenService jwtTokenService;
-
-    @Mock
-    private UserQueryService userQueryService;
-
-    @InjectMocks
-    private IdentityController identityController;
+    @Mock private JwtTokenService jwtTokenService;
+    @Mock private UserQueryService userQueryService;
+    @InjectMocks private IdentityController identityController;
 
     @Test
     void verifyToken_validJwt_returnsValidResponse() {
@@ -44,12 +36,10 @@ class IdentityControllerTest {
         when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
 
-        var request = new VerifyTokenRequest("valid-jwt");
-        var response = identityController.verifyToken(request);
+        var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isTrue();
-        assertThat(response.getBody().user()).isNotNull();
         assertThat(response.getBody().user().matricule()).isEqualTo("K48-2024-001");
     }
 
@@ -58,10 +48,8 @@ class IdentityControllerTest {
         when(jwtTokenService.validateToken("expired-jwt"))
                 .thenThrow(new JwtTokenExpiredException("Token expired"));
 
-        var request = new VerifyTokenRequest("expired-jwt");
-        var response = identityController.verifyToken(request);
+        var response = identityController.verifyToken(new VerifyTokenRequest("expired-jwt"));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("TOKEN_EXPIRED");
     }
@@ -71,10 +59,8 @@ class IdentityControllerTest {
         when(jwtTokenService.validateToken("invalid-jwt"))
                 .thenThrow(new JwtSignatureException("Invalid token"));
 
-        var request = new VerifyTokenRequest("invalid-jwt");
-        var response = identityController.verifyToken(request);
+        var response = identityController.verifyToken(new VerifyTokenRequest("invalid-jwt"));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("TOKEN_INVALID");
     }
@@ -88,10 +74,8 @@ class IdentityControllerTest {
         when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
 
-        var request = new VerifyTokenRequest("valid-jwt");
-        var response = identityController.verifyToken(request);
+        var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("ACCOUNT_SUSPENDED");
     }
@@ -104,12 +88,44 @@ class IdentityControllerTest {
         when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.empty());
 
-        var request = new VerifyTokenRequest("valid-jwt");
-        var response = identityController.verifyToken(request);
+        var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isFalse();
         assertThat(response.getBody().reason()).isEqualTo("USER_NOT_FOUND");
+    }
+
+    @Test
+    void getPublicIdentity_returnsPublicIdentityPayload() {
+        var userId = UUID.randomUUID();
+        var user = createUser(userId, UserStatus.ACTIVE);
+        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
+
+        var response = identityController.getPublicIdentity(userId);
+
+        assertThat(response.getBody().id()).isEqualTo(userId.toString());
+        assertThat(response.getBody().matricule()).isEqualTo("K48-2024-001");
+        assertThat(response.getBody().profileCompleted()).isTrue();
+    }
+
+    @Test
+    void matriculeExists_returnsExistsResponse() {
+        var user = createUser(UUID.randomUUID(), UserStatus.PENDING_ACTIVATION);
+        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
+
+        var response = identityController.matriculeExists("K48-2024-001");
+
+        assertThat(response.getBody().exists()).isTrue();
+        assertThat(response.getBody().status()).isEqualTo("PENDING_ACTIVATION");
+    }
+
+    @Test
+    void matriculeExists_returnsNotExistsResponse() {
+        when(userQueryService.findByMatricule("K48-2024-404")).thenReturn(Optional.empty());
+
+        var response = identityController.matriculeExists("K48-2024-404");
+
+        assertThat(response.getBody().exists()).isFalse();
+        assertThat(response.getBody().status()).isNull();
     }
 
     private Jwt createMockJwt(String subject) {

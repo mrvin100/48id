@@ -1,207 +1,157 @@
 # 48ID
 
-**Centralized Identity and Authentication Platform for the K48 Ecosystem**
+48ID is the centralized identity and authentication platform for the K48 ecosystem. It provides a unified backend for user authentication, JWT token management, user provisioning, profile administration, audit logging, and secure application-to-application integration.
 
-[![Build Status](https://github.com/mrvin100/48id/actions/workflows/ci.yml/badge.svg)](https://github.com/mrvin100/48id/actions)
-[![License](https://img.shields.io/badge/license-K48-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://adoptium.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+This repository documents and implements the **MVP scope** of 48ID.
 
-## Overview
+## Purpose
 
-48ID is the unified identity backbone of the K48 ecosystem — a standalone, API-first Identity Provider (IdP) that eliminates the need for every student-built application to implement its own authentication system.
+48ID exists to give K48 applications a shared identity layer instead of duplicating authentication logic in each product. In the MVP, it supports:
 
-**Key Benefits:**
-- ✅ Single Sign-On (SSO) across all K48 platforms
-- ✅ Enterprise-grade security (JWT, rate limiting, audit logging)
-- ✅ Developer-friendly integration (< 1 day using Swagger)
-- ✅ Centralized user management and audit trail
+- student and admin authentication with JWT access tokens and refresh tokens
+- first-time account activation for provisioned users
+- password reset and password change flows
+- profile self-service for authenticated users
+- admin user management and audit-log access
+- CSV-based bulk user provisioning
+- API key management for trusted backend integrations
+- public key discovery through JWKS for JWT validation
 
-## Quick Start
+## MVP features
+
+- JWT-based sign-in, refresh, logout, and token verification
+- account activation with email token
+- forced password change after initial provisioning
+- role-based authorization for `ADMIN` and `STUDENT`
+- API-key-protected verification and public identity endpoints for trusted applications
+- admin operations for user lifecycle, audit review, and API key rotation
+- PostgreSQL persistence, Flyway migrations, Redis-backed supporting infrastructure, and OpenAPI UI
+
+## Architecture overview
+
+48ID is a Spring Boot 3 application organized with Spring Modulith into bounded modules:
+
+- `auth` — login, JWT, refresh tokens, password reset, activation, API key verification
+- `identity` — user aggregate, profile updates, roles, status transitions
+- `admin` — privileged user administration and API key administration
+- `provisioning` — CSV import workflow for bulk onboarding
+- `audit` — audit event capture and retrieval
+- `shared` — security, rate limiting, exception handling, infrastructure configuration
+
+```mermaid
+flowchart LR
+    Apps[Client applications\n48Hub / LP48 / admin UI] --> API[48ID API]
+    API --> AUTH[auth]
+    API --> ID[identity]
+    API --> ADMIN[admin]
+    API --> PROV[provisioning]
+    API --> AUDIT[audit]
+    AUTH --> PG[(PostgreSQL)]
+    ID --> PG
+    ADMIN --> PG
+    PROV --> PG
+    AUDIT --> PG
+    API --> REDIS[(Redis)]
+    API --> SMTP[SMTP server]
+```
+
+See the full documentation in [`docs/README.md`](docs/README.md).
+
+## Quick start
 
 ### Prerequisites
-- Java 21+
-- Docker & Docker Compose
-- Git
 
-### 1. Clone Repository
+- Java 21
+- Docker and Docker Compose
+- an SMTP server for email delivery in non-local environments
+
+### Start dependencies
+
 ```bash
-git clone https://github.com/mrvin100/48id.git
-cd 48id
+docker compose up -d postgres redis
 ```
 
-### 2. Start Infrastructure
+### Configure environment
+
+Copy the example environment file and adjust values as needed:
+
 ```bash
-docker compose up -d
+cp .env.example .env
 ```
 
-### 3. Run Application
+Key variables:
+
+- `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
+- `REDIS_HOST`, `REDIS_PORT`
+- `JWT_ISSUER`, `JWT_RSA_PUBLIC_KEY`, `JWT_RSA_PRIVATE_KEY`
+- `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`
+- `MAIL_LOGIN_URL`, `MAIL_ACTIVATION_URL`, `MAIL_RESET_PASSWORD_URL`
+
+### Run the application
+
 ```bash
 ./gradlew bootRun
 ```
 
-### 4. Access Swagger UI
-Open http://localhost:8080/api/v1/docs
+Windows:
 
-## Key Features (MVP)
-
-### Authentication
-- Matricule-based login for K48 students and administrators
-- JWT access tokens (15 min, RS256 signed)
-- Refresh tokens (7 days, Redis-backed)
-- Password reset via email
-
-### Authorization
-- Role-based access control (ADMIN, STUDENT)
-- API key authentication for external applications
-- Method-level security enforcement
-
-### User Management
-- CSV bulk import for student provisioning
-- User profile management
-- Account status management (ACTIVE, SUSPENDED, PENDING_ACTIVATION)
-- Profile completion tracking
-
-### Security
-- Rate limiting on authentication endpoints
-- Account lockout after failed attempts
-- Password policy enforcement
-- Comprehensive audit logging
-
-### Developer Experience
-- OpenAPI/Swagger documentation
-- Consistent error responses (RFC 7807)
-- Integration guides and examples
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| Backend Framework | Spring Boot 3 |
-| Security | Spring Security 6 |
-| Architecture | Spring Modulith |
-| Database | PostgreSQL 15 |
-| Cache | Redis 7 |
-| JWT | Nimbus JOSE + JWT |
-| Rate Limiting | Bucket4j |
-| Documentation | SpringDoc OpenAPI |
-| Build Tool | Gradle |
-| Containerization | Docker |
-
-## Architecture
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    48ID Platform                         │
-├─────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
-│  │   Auth   │  │ Identity │  │  Admin   │  │  Audit  │ │
-│  │  Module  │  │  Module  │  │  Module  │  │ Module  │ │
-│  └──────────┘  └──────────┘  └──────────┘  └─────────┘ │
-│                                                         │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │           Shared Module (Common Services)         │  │
-│  └──────────────────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────┤
-│  PostgreSQL (Users, Roles, Audit)  │  Redis (Tokens)   │
-└─────────────────────────────────────────────────────────┘
+```powershell
+.\gradlew.bat bootRun
 ```
 
-See [Architecture Documentation](docs/overview/architecture.md) for details.
+### Useful URLs
+
+- API base URL: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/api/v1/docs`
+- OpenAPI JSON: `http://localhost:8080/api-docs`
+- JWKS: `http://localhost:8080/.well-known/jwks.json`
+
+## Technology stack
+
+- Java 21
+- Spring Boot 3
+- Spring Security
+- Spring Modulith
+- Spring Data JPA
+- PostgreSQL
+- Redis
+- Flyway
+- Bucket4j
+- Springdoc OpenAPI
+- JUnit 5, Spring Test, Testcontainers
+
+## Integrating with the API
+
+Typical integration patterns are:
+
+1. **User-facing applications** authenticate users with `POST /api/v1/auth/login` and send the returned bearer token on protected requests.
+2. **Trusted backend applications** use admin-created API keys in the `X-API-Key` header to call:
+   - `POST /api/v1/auth/verify-token`
+   - `GET /api/v1/users/{id}/identity`
+   - `GET /api/v1/users/{matricule}/exists`
+3. **JWT consumers** validate access tokens using the JWKS endpoint.
+
+Start with:
+
+- [`docs/overview/quickstart.md`](docs/overview/quickstart.md)
+- [`docs/integration-guides/getting-started.md`](docs/integration-guides/getting-started.md)
+- [`docs/api/overview.md`](docs/api/overview.md)
 
 ## Documentation
 
-Comprehensive documentation is available in the [`docs/`](docs/) directory:
+The complete documentation set is available under [`docs/`](docs/README.md), including:
 
-- **[Overview](docs/README.md)** - Documentation index
-- **[Quick Start](docs/overview/quickstart.md)** - Get started in minutes
-- **[Architecture](docs/overview/architecture.md)** - System design
-- **[API Reference](docs/api/overview.md)** - Complete API documentation
-- **[Integration Guide](docs/integration/getting-started.md)** - Integrate your app
-- **[Admin Operations](docs/admin/overview.md)** - Admin user guide
-- **[Deployment](docs/deployment/overview.md)** - Deploy to production
-
-**Swagger UI:** http://localhost:8080/api/v1/docs
-
-## Integration Example
-
-### 1. Request API Key
-Contact K48 administration to obtain an API key.
-
-### 2. Verify User Token
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/verify-token \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"token": "user-jwt-token"}'
-```
-
-### 3. Get User Identity
-```bash
-curl -X GET http://localhost:8080/api/v1/users/{user-id}/identity \
-  -H "X-API-Key: your-api-key"
-```
-
-See [Integration Guide](docs/integration/getting-started.md) for complete examples.
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/fortyeightid` |
-| `DATABASE_USERNAME` | Database username | `fortyeightid` |
-| `DATABASE_PASSWORD` | Database password | `fortyeightid` |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `JWT_ISSUER` | JWT issuer URI | `http://localhost:8080` |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
-
-See [Configuration Guide](docs/deployment/configuration.md) for full configuration options.
-
-## Testing
-
-### Run All Tests
-```bash
-./gradlew test
-```
-
-### Run Specific Test
-```bash
-./gradlew test --tests "io.k48.fortyeightid.auth.internal.AuthServiceTest"
-```
-
-### Test Coverage
-```bash
-./gradlew jacocoTestReport
-```
+- architecture
+- API reference
+- authentication and security flows
+- admin operations
+- deployment and testing guidance
+- glossary
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m "Add amazing feature"`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/developer-guide/contributing.md`](docs/developer-guide/contributing.md).
 
 ## License
 
-48ID is licensed under the K48 License. See [LICENSE](LICENSE) for details.
-
-## Support
-
-- **Documentation:** [docs/](docs/)
-- **Swagger UI:** http://localhost:8080/api/v1/docs
-- **Email:** support@k48.io
-
-## Acknowledgments
-
-48ID is part of the K48 (KFOKAM48) ecosystem, providing centralized identity management for all K48 platforms.
-
----
-
-**Built with ❤️ for the K48 Ecosystem**
+This project is licensed under the terms of the [MIT License](LICENSE).

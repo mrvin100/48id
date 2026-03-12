@@ -13,4 +13,8 @@ interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken,
     @Modifying
     @Query("DELETE FROM PasswordResetToken t WHERE t.userId = :userId")
     void deleteAllByUserId(UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM PasswordResetToken t WHERE t.userId = :userId AND t.purpose = :purpose")
+    void deleteAllByUserIdAndPurpose(UUID userId, ResetTokenPurpose purpose);
 }
