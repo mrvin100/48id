@@ -72,6 +72,10 @@ class AuthService {
         // Successful login - reset failed attempts
         loginAttemptService.resetFailedAttempts(request.matricule());
 
+        // Update last login timestamp
+        user.setLastLoginAt(java.time.OffsetDateTime.now());
+        userQueryService.save(user);
+
         var principal = new UserPrincipal(user);
         var accessToken = jwtTokenService.generateAccessToken(principal, user);
         var refreshToken = refreshTokenService.createRefreshToken(user.getId());
