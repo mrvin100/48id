@@ -6,8 +6,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.audit.internal.AuditLog;
-import io.k48.fortyeightid.audit.internal.AuditLogRepository;
+import io.k48.fortyeightid.audit.AuditLog;
+import io.k48.fortyeightid.audit.AuditLogRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.audit.internal;
+package io.k48.fortyeightid.audit;
 
 import java.time.Instant;
 import java.util.UUID;

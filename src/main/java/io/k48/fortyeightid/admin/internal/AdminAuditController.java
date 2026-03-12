@@ -1,7 +1,7 @@
 package io.k48.fortyeightid.admin.internal;
 
-import io.k48.fortyeightid.audit.internal.AuditLog;
-import io.k48.fortyeightid.audit.internal.AuditLogRepository;
+import io.k48.fortyeightid.audit.AuditLog;
+import io.k48.fortyeightid.audit.AuditLogRepository;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

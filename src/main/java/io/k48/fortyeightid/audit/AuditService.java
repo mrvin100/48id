@@ -1,8 +1,6 @@
 package io.k48.fortyeightid.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.k48.fortyeightid.audit.internal.AuditLog;
-import io.k48.fortyeightid.audit.internal.AuditLogRepository;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
