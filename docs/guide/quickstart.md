@@ -98,7 +98,7 @@ You should see:
 
 ### Create an admin user (one-time setup)
 
-The first time you run 48ID, you'll need to seed an admin user. Run this SQL directly in PostgreSQL:
+**Prerequisites:** Run this SQL **only after** starting the application at least once so that Flyway migrations have created the database schema (including the `users` table and `requires_password_change` column).
 
 ```sql
 -- Connect to the database

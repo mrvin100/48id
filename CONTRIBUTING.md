@@ -93,7 +93,7 @@ git commit -m "feat: add OAuth support (48ID-E07-01)"
 ```
 
 **Commit message format:**
-```
+```text
 <type>: <description> (<story-id>)
 
 Examples:

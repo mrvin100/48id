@@ -150,7 +150,7 @@ sequenceDiagram
 | Token | Lifetime | Purpose | Storage |
 |-------|----------|---------|---------|
 | **Access Token** | 15 minutes | API authentication | Memory (not localStorage) |
-| **Refresh Token** | 30 days | Get new access token | HttpOnly cookie recommended |
+| **Refresh Token** | 86400 seconds (1 day) | Get new access token | HttpOnly cookie recommended |
 | **Activation Token** | 24 hours | Account activation | Email link only |
 | **Reset Token** | 1 hour | Password reset | Email link only |
 | **API Key** | No expiration | Server-to-server auth | Environment variables |

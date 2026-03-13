@@ -87,7 +87,7 @@ graph TB
 
 ### Module structure
 
-```
+```text
 io.k48.fortyeightid
 ├── auth/          → Authentication, JWT, password reset, activation
 ├── identity/      → User entity, profiles, roles, status
