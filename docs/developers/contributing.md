@@ -6,7 +6,7 @@ This guide covers contribution workflows and coding standards for 48ID.
 
 For a complete step-by-step guide to implementing user stories from the MVP backlog, see:
 
-→ **[Story implementation workflow](story-implementation-workflow.md)**
+→ **[Story implementation workflow](story-workflow.md)**
 
 This includes:
 - Git branching strategy
@@ -69,8 +69,7 @@ See the [PR checklist template](../../.github/pull_request_template.md) for full
 
 ## See also
 
-- [Story implementation workflow](story-implementation-workflow.md)
+- [Story implementation workflow](story-workflow.md)
 - root [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
-- [Architecture](../overview/architecture.md)
+- [Architecture](../guide/architecture.md)
 - [Error model](../api/errors.md)
-- [Testing guide](../testing/overview.md)

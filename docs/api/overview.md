@@ -13,9 +13,9 @@ In production, use your deployed instance URL.
 ## API categories
 
 - [Authentication API](authentication.md)
-- [Identity management API](identity-management.md)
-- [Admin operations API](admin-operations.md)
-- [Public integration API](public-integration.md)
+- [Identity management API](identity.md)
+- [Admin operations API](admin.md)
+- [Public integration API](integration.md)
 - [Error model](errors.md)
 
 ## Authentication modes
