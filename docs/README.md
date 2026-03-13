@@ -1,88 +1,99 @@
-# 48ID documentation
+# 48ID Documentation
 
-This documentation set covers the implemented MVP for 48ID.
+Welcome to the 48ID documentation. This guide will help you understand, integrate with, and contribute to 48ID.
 
-## Documentation map
+## Documentation Structure
 
-```text
+```
 docs/
-├── README.md
-├── overview/
+├── guide/              # User guides and concepts
 │   ├── introduction.md
+│   ├── quickstart.md
 │   ├── architecture.md
-│   └── quickstart.md
-├── api/
+│   ├── authentication.md
+│   ├── integration.md
+│   └── deployment.md
+├── api/                # API reference
 │   ├── overview.md
 │   ├── authentication.md
-│   ├── identity-management.md
-│   ├── admin-operations.md
-│   ├── public-integration.md
+│   ├── identity.md
+│   ├── admin.md
+│   ├── integration.md
 │   └── errors.md
-├── authentication/
-│   └── flows.md
-├── authorization/
-│   └── model.md
-├── identity-management/
-│   └── overview.md
-├── admin-operations/
-│   └── overview.md
-├── integration-guides/
-│   └── getting-started.md
-├── developer-guide/
+├── developers/         # Developer documentation
 │   ├── contributing.md
-│   └── story-implementation-workflow.md
-├── deployment/
-│   └── overview.md
-├── security/
-│   └── overview.md
-├── testing/
-│   └── overview.md
-└── glossary.md
+│   └── story-workflow.md
+└── GLOSSARY.md         # Terms and concepts
 ```
 
-## Start here
+## Quick Navigation
 
-- [Introduction](overview/introduction.md)
-- [Quick start](overview/quickstart.md)
-- [Architecture](overview/architecture.md)
-- [API overview](api/overview.md)
-- [Integration guide](integration-guides/getting-started.md)
+### Getting Started
 
-## Section guide
+- 🚀 **[Quick Start](guide/quickstart.md)** — Get 48ID running in 5 minutes
+- 📖 **[Introduction](guide/introduction.md)** — What is 48ID and the K48 ecosystem
+- 🏗️ **[Architecture](guide/architecture.md)** — System design and module structure
 
-### Overview
+### Using 48ID
 
-- [Introduction](overview/introduction.md)
-- [Architecture](overview/architecture.md)
-- [Quick start](overview/quickstart.md)
+- 🔐 **[Authentication Guide](guide/authentication.md)** — How authentication works
+- 🔌 **[Integration Guide](guide/integration.md)** — Integrate your application
+- 🚢 **[Deployment Guide](guide/deployment.md)** — Deploy to production
 
-### API reference
+### API Reference
 
-- [API overview](api/overview.md)
-- [Authentication API](api/authentication.md)
-- [Identity management API](api/identity-management.md)
-- [Admin operations API](api/admin-operations.md)
-- [Public integration API](api/public-integration.md)
-- [Error model](api/errors.md)
+- 📚 **[API Overview](api/overview.md)** — API introduction and conventions
+- 🔑 **[Authentication API](api/authentication.md)** — Login, tokens, password flows
+- 👤 **[Identity API](api/identity.md)** — User profile operations
+- 🔧 **[Admin API](api/admin.md)** — User management, audit, API keys
+- 🔗 **[Integration API](api/integration.md)** — Token verification, public identity
+- ❌ **[Error Reference](api/errors.md)** — Error codes and handling
 
-### Concepts and operations
+### For Developers
 
-- [Authentication flows](authentication/flows.md)
-- [Authorization model](authorization/model.md)
-- [Identity management guide](identity-management/overview.md)
-- [Admin operations guide](admin-operations/overview.md)
-- [Security guide](security/overview.md)
-- [Deployment guide](deployment/overview.md)
-- [Testing guide](testing/overview.md)
-- [Developer guide](developer-guide/contributing.md)
-- [Story implementation workflow](developer-guide/story-implementation-workflow.md)
-- [Glossary](glossary.md)
+- 🛠️ **[Contributing](developers/contributing.md)** — Development setup and standards
+- 📝 **[Story Workflow](developers/story-workflow.md)** — Implementing backlog stories
+- 📖 **[Glossary](GLOSSARY.md)** — Terms and concepts
 
-## Documentation principles
+## Common Use Cases
 
-This documentation is intentionally:
+### I want to...
 
-- implementation-aligned with the current branch
-- scoped to the MVP only
-- modular, so new product areas can be added later
-- written for both integrators and maintainers
+**...integrate my app with 48ID for user authentication**
+→ Read: [Integration Guide](guide/integration.md) → [Authentication API](api/authentication.md)
+
+**...understand how authentication works**
+→ Read: [Authentication Guide](guide/authentication.md)
+
+**...deploy 48ID to production**
+→ Read: [Deployment Guide](guide/deployment.md)
+
+**...verify user tokens from my backend**
+→ Read: [Integration Guide](guide/integration.md#pattern-2-backend-service-integration) → [Integration API](api/integration.md)
+
+**...manage users as an admin**
+→ Read: [Admin API](api/admin.md)
+
+**...contribute to the project**
+→ Read: [Contributing](developers/contributing.md) → [Story Workflow](developers/story-workflow.md)
+
+## Documentation Principles
+
+This documentation is:
+
+✅ **Implementation-aligned** — Describes actual behavior, not planned features  
+✅ **MVP-scoped** — Covers current MVP, with notes on future enhancements  
+✅ **Modular** — Easy to navigate and extend  
+✅ **Example-rich** — Includes code examples and diagrams  
+✅ **Up-to-date** — Updated with every feature change  
+
+## Need Help?
+
+- 📖 Check this documentation
+- 💬 Open a GitHub Discussion
+- 🐛 Report bugs via GitHub Issues
+- 📧 Contact K48 administration for operational support
+
+---
+
+**[⬆ Back to main README](../README.md)**

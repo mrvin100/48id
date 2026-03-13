@@ -1,157 +1,281 @@
-# 48ID
+<div align="center">
 
-48ID is the centralized identity and authentication platform for the K48 ecosystem. It provides a unified backend for user authentication, JWT token management, user provisioning, profile administration, audit logging, and secure application-to-application integration.
+# 🔐 48ID
 
-This repository documents and implements the **MVP scope** of 48ID.
+**The Identity Provider for the K48 Ecosystem**
 
-## Purpose
+[![Build Status](https://github.com/mrvin100/48id/workflows/CI/badge.svg)](https://github.com/mrvin100/48id/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3-green.svg)](https://spring.io/projects/spring-boot)
 
-48ID exists to give K48 applications a shared identity layer instead of duplicating authentication logic in each product. In the MVP, it supports:
+Centralized authentication, user management, and identity services powering the K48 ecosystem.
 
-- student and admin authentication with JWT access tokens and refresh tokens
-- first-time account activation for provisioned users
-- password reset and password change flows
-- profile self-service for authenticated users
-- admin user management and audit-log access
-- CSV-based bulk user provisioning
-- API key management for trusted backend integrations
-- public key discovery through JWKS for JWT validation
+[Documentation](docs) • [Quick Start](#quick-start) • [API Reference](docs/api) • [Contributing](CONTRIBUTING.md)
 
-## MVP features
+</div>
 
-- JWT-based sign-in, refresh, logout, and token verification
-- account activation with email token
-- forced password change after initial provisioning
-- role-based authorization for `ADMIN` and `STUDENT`
-- API-key-protected verification and public identity endpoints for trusted applications
-- admin operations for user lifecycle, audit review, and API key rotation
-- PostgreSQL persistence, Flyway migrations, Redis-backed supporting infrastructure, and OpenAPI UI
+---
 
-## Architecture overview
+## 🌟 Overview
 
-48ID is a Spring Boot 3 application organized with Spring Modulith into bounded modules:
+**48ID** is the identity backbone of the K48 ecosystem, providing secure authentication and user management for:
 
-- `auth` — login, JWT, refresh tokens, password reset, activation, API key verification
-- `identity` — user aggregate, profile updates, roles, status transitions
-- `admin` — privileged user administration and API key administration
-- `provisioning` — CSV import workflow for bulk onboarding
-- `audit` — audit event capture and retrieval
-- `shared` — security, rate limiting, exception handling, infrastructure configuration
+- 🎓 **[48Hub](https://github.com/mrvin100/48hub)** — Alumni verification and networking platform
+- 🚀 **[LP48](https://github.com/mrvin100/lp48)** — Student project showcase platform
+- 🔧 **Future K48 applications** — Extensible identity layer for the ecosystem
+
+### What 48ID provides
+
+| Feature | Description |
+|---------|-------------|
+| 🔑 **Authentication** | JWT-based login, refresh tokens, account activation |
+| 👤 **User Management** | Profile administration, role-based access control |
+| 📊 **Provisioning** | CSV-based bulk user import with email activation |
+| 🔐 **API Integration** | API keys for trusted backend services |
+| 📝 **Audit Logging** | Complete audit trail for security and compliance |
+| 🔒 **Security** | Password policies, rate limiting, token validation |
+
+---
+
+## 🏗️ Architecture
+
+48ID is built with **Spring Modulith** to enforce clean module boundaries and maintainability.
 
 ```mermaid
-flowchart LR
-    Apps[Client applications\n48Hub / LP48 / admin UI] --> API[48ID API]
-    API --> AUTH[auth]
-    API --> ID[identity]
-    API --> ADMIN[admin]
-    API --> PROV[provisioning]
-    API --> AUDIT[audit]
-    AUTH --> PG[(PostgreSQL)]
-    ID --> PG
-    ADMIN --> PG
-    PROV --> PG
-    AUDIT --> PG
-    API --> REDIS[(Redis)]
-    API --> SMTP[SMTP server]
+graph TB
+    subgraph "K48 Ecosystem"
+        Hub[48Hub]
+        LP[LP48]
+        Admin[Admin Portal]
+    end
+
+    subgraph "48ID - Identity Provider"
+        API[REST API]
+        Auth[auth module]
+        Identity[identity module]
+        Provisioning[provisioning module]
+        AdminMod[admin module]
+        Audit[audit module]
+    end
+
+    subgraph "Infrastructure"
+        PG[(PostgreSQL)]
+        Redis[(Redis)]
+        SMTP[SMTP Server]
+    end
+
+    Hub --> API
+    LP --> API
+    Admin --> API
+    
+    API --> Auth
+    API --> Identity
+    API --> Provisioning
+    API --> AdminMod
+    API --> Audit
+    
+    Auth --> PG
+    Identity --> PG
+    Provisioning --> PG
+    AdminMod --> PG
+    Audit --> PG
+    
+    API --> Redis
+    Auth --> SMTP
 ```
 
-See the full documentation in [`docs/README.md`](docs/README.md).
+### Module structure
 
-## Quick start
+```
+io.k48.fortyeightid
+├── auth/          → Authentication, JWT, password reset, activation
+├── identity/      → User entity, profiles, roles, status
+├── admin/         → Admin operations, API key management
+├── provisioning/  → CSV import, bulk user creation
+├── audit/         → Audit logging and history
+└── shared/        → Security, exceptions, infrastructure
+```
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
 
-- Java 21
-- Docker and Docker Compose
-- an SMTP server for email delivery in non-local environments
+- **Java 21+**
+- **Docker & Docker Compose**
+- **SMTP server** (or use [MailHog](https://github.com/mailhog/MailHog) for local dev)
 
-### Start dependencies
-
-```bash
-docker compose up -d postgres redis
-```
-
-### Configure environment
-
-Copy the example environment file and adjust values as needed:
+### 1. Clone and configure
 
 ```bash
+git clone https://github.com/mrvin100/48id.git
+cd 48id
 cp .env.example .env
 ```
 
-Key variables:
+Edit `.env` with your database and SMTP settings.
 
-- `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
-- `REDIS_HOST`, `REDIS_PORT`
-- `JWT_ISSUER`, `JWT_RSA_PUBLIC_KEY`, `JWT_RSA_PRIVATE_KEY`
-- `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`
-- `MAIL_LOGIN_URL`, `MAIL_ACTIVATION_URL`, `MAIL_RESET_PASSWORD_URL`
+### 2. Start infrastructure
 
-### Run the application
+```bash
+docker compose up -d
+```
+
+This starts PostgreSQL and Redis locally.
+
+### 3. Run the application
 
 ```bash
 ./gradlew bootRun
 ```
 
-Windows:
-
+**Windows:**
 ```powershell
 .\gradlew.bat bootRun
 ```
 
-### Useful URLs
+### 4. Verify it's working
 
-- API base URL: `http://localhost:8080/api/v1`
-- Swagger UI: `http://localhost:8080/api/v1/docs`
-- OpenAPI JSON: `http://localhost:8080/api-docs`
-- JWKS: `http://localhost:8080/.well-known/jwks.json`
+- **API:** http://localhost:8080/api/v1
+- **Swagger UI:** http://localhost:8080/api/v1/docs
+- **Health:** http://localhost:8080/actuator/health
+- **JWKS:** http://localhost:8080/.well-known/jwks.json
 
-## Technology stack
+---
 
-- Java 21
-- Spring Boot 3
-- Spring Security
-- Spring Modulith
-- Spring Data JPA
-- PostgreSQL
-- Redis
-- Flyway
-- Bucket4j
-- Springdoc OpenAPI
-- JUnit 5, Spring Test, Testcontainers
+## 🚀 Integration
 
-## Integrating with the API
+### For user-facing apps (48Hub, LP48)
 
-Typical integration patterns are:
+```javascript
+// 1. Login
+const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    matricule: 'K48-2024-001',
+    password: 'userPassword'
+  })
+});
 
-1. **User-facing applications** authenticate users with `POST /api/v1/auth/login` and send the returned bearer token on protected requests.
-2. **Trusted backend applications** use admin-created API keys in the `X-API-Key` header to call:
-   - `POST /api/v1/auth/verify-token`
-   - `GET /api/v1/users/{id}/identity`
-   - `GET /api/v1/users/{matricule}/exists`
-3. **JWT consumers** validate access tokens using the JWKS endpoint.
+const { access_token, refresh_token } = await response.json();
 
-Start with:
+// 2. Use access token
+const profile = await fetch('http://localhost:8080/api/v1/me', {
+  headers: { 'Authorization': `Bearer ${access_token}` }
+});
+```
 
-- [`docs/overview/quickstart.md`](docs/overview/quickstart.md)
-- [`docs/integration-guides/getting-started.md`](docs/integration-guides/getting-started.md)
-- [`docs/api/overview.md`](docs/api/overview.md)
+### For backend services
 
-## Documentation
+```bash
+# Verify user token server-to-server
+curl -X POST http://localhost:8080/api/v1/auth/verify-token \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"user-jwt-token"}'
+```
 
-The complete documentation set is available under [`docs/`](docs/README.md), including:
+👉 **[Full Integration Guide](docs/guide/integration.md)**
 
-- architecture
-- API reference
-- authentication and security flows
-- admin operations
-- deployment and testing guidance
-- glossary
+---
 
-## Contributing
+## 📚 Documentation
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/developer-guide/contributing.md`](docs/developer-guide/contributing.md).
+| Section | Description |
+|---------|-------------|
+| **[Guide](docs/guide)** | Introduction, architecture, authentication, deployment |
+| **[API Reference](docs/api)** | Complete endpoint documentation |
+| **[Developers](docs/developers)** | Contributing, testing, development workflow |
 
-## License
+**Quick links:**
+- [What is 48ID?](docs/guide/introduction.md)
+- [Architecture overview](docs/guide/architecture.md)
+- [Authentication flows](docs/guide/authentication.md)
+- [API overview](docs/api/overview.md)
+- [How to contribute](CONTRIBUTING.md)
 
-This project is licensed under the terms of the [MIT License](LICENSE).
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Spring Boot 3, Spring Security, Spring Modulith
+- **Database:** PostgreSQL 17 + Flyway migrations
+- **Cache:** Redis
+- **Auth:** JWT (RS256), refresh tokens, API keys
+- **API Docs:** Springdoc OpenAPI (Swagger UI)
+- **Testing:** JUnit 5, Mockito, Testcontainers
+- **Build:** Gradle, Docker
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's bug fixes, new features, or documentation improvements.
+
+**Get started:**
+1. Read the [Contributing Guide](CONTRIBUTING.md)
+2. Check the [Story Implementation Workflow](docs/developers/story-workflow.md)
+3. Follow our [Code Standards](docs/developers/contributing.md#coding-standards)
+
+**Development setup:**
+
+```bash
+# Run tests
+./gradlew test
+
+# Check module boundaries
+./gradlew test --tests ApplicationModularityTests
+
+# Build
+./gradlew build
+```
+
+---
+
+## 📋 Project Status
+
+This repository implements the **MVP scope** of 48ID:
+
+✅ JWT authentication and refresh tokens  
+✅ Account activation with email  
+✅ Password reset and change flows  
+✅ CSV user provisioning  
+✅ Admin user management  
+✅ API key management  
+✅ Audit logging  
+✅ Public identity endpoints for integration  
+
+**Future roadmap:**
+- OAuth 2.0 / OpenID Connect support
+- Social login providers
+- Multi-factor authentication (MFA)
+- SCIM provisioning
+- Advanced RBAC with custom permissions
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the K48 Team for the K48 ecosystem.
+
+**Part of the K48 ecosystem:**
+- [48Hub](https://github.com/mrvin100/48hub) — Alumni verification platform
+- [LP48](https://github.com/mrvin100/lp48) — Project showcase platform
+- **48ID** — Identity provider (this repository)
+
+---
+
+<div align="center">
+
+**[⬆ Back to top](#-48id)**
+
+</div>
