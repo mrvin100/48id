@@ -232,7 +232,6 @@ Content-Type: application/json
   "sub": "user-uuid",
   "matricule": "K48-2024-001",
   "name": "Ama Owusu",
-  "email": "ama@k48.io",
   "role": "STUDENT",
   "batch": "2024",
   "iss": "http://localhost:8080",
@@ -248,7 +247,7 @@ Content-Type: application/json
 ### Refresh Token
 
 **Format:** UUID v4  
-**Lifetime:** 30 days  
+**Lifetime:** 86400 seconds (1 day)  
 **Storage:** HttpOnly cookie (recommended) or secure storage  
 **Usage:** POST to `/auth/refresh` to get new access token  
 **Security:** Rotated on each use
