@@ -450,7 +450,7 @@ curl -X POST http://localhost:8080/api/v1/admin/users/import \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -F "file=@test-users.csv"
 
-# 3. Check activation email in MailHog (http://localhost:8025)
+# 3. Check activation email in Mailpit (http://localhost:8025)
 ```
 
 ---

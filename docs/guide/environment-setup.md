@@ -37,7 +37,7 @@ That's it! The default configuration works for local development.
 - Swagger UI at `http://localhost:8080/swagger-ui.html`
 - Detailed logging for debugging
 - Relaxed CORS and security settings
-- MailHog for email testing (no real emails sent)
+- Mailpit for email testing (no real emails sent)
 
 **Setup:**
 ```bash
@@ -45,11 +45,7 @@ That's it! The default configuration works for local development.
 cp .env.example .env
 
 # Start services
-docker compose up -d postgres redis
-
-# (Optional) Start MailHog for email testing
-docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
-# View emails at http://localhost:8025
+docker compose up -d postgres redis mailpit
 
 # Run application
 ./gradlew bootRun
@@ -286,10 +282,10 @@ redis-cli -h localhost -p 6379 ping
 ### Email Not Sending (Dev)
 
 ```bash
-# Check if MailHog is running
-docker ps | grep mailhog
+# Check if Mailpit is running
+docker ps | grep mailpit
 
-# Access MailHog UI
+# Access Mailpit Web UI
 open http://localhost:8025
 ```
 

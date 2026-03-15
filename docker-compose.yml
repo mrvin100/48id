@@ -29,6 +29,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Mailpit - Email testing tool for development
+  # Web UI: http://localhost:8025
+  # SMTP: localhost:1025
+  mailpit:
+    image: axllent/mailpit:v1.29.3
+    container_name: 48id-mailpit
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025/api/v1/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     container_name: 48id-app
@@ -37,12 +55,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_healthy
     environment:
       DATABASE_URL: jdbc:postgresql://postgres:5432/fortyeightid
       DATABASE_USERNAME: fortyeightid
       DATABASE_PASSWORD: fortyeightid
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_SMTP_AUTH: "false"
+      MAIL_SMTP_STARTTLS: "false"
+      MAIL_FROM: no-reply@48id.local
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: default
       SPRINGDOC_SWAGGER_ENABLED: "true"
