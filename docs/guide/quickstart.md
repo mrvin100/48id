@@ -23,7 +23,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-This creates a local development configuration. For detailed environment setup (dev, test, production), see the **[Environment Setup Guide](environment-setup.md)**.
+This creates your local configuration with sensible defaults for development.
 
 Edit `.env` for your local environment. Minimum configuration:
 
