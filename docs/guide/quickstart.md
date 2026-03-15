@@ -62,7 +62,7 @@ This starts:
 - Redis on `localhost:6379`
 - Mailpit (email testing) on `localhost:1025` (SMTP) and `localhost:8025` (Web UI)
 
-> **Note:** The `docker-compose.yml` also defines an `app` service that builds and runs 48ID in a container. Use `docker compose up -d` (without specifying services) to start everything including the app container. For local development, starting only `postgres`, `redis`, and `mailpit` and running the app with Gradle is recommended.
+> **Note:** Docker Compose automatically loads environment variables from your `.env` file. The services use the same configuration as your local development setup. The `docker-compose.yml` also defines an `app` service that builds and runs 48ID in a container. Use `docker compose up -d` (without specifying services) to start everything including the app container.
 
 ## Step 4: Run the application
 

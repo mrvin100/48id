@@ -44,7 +44,7 @@ That's it! The default configuration works for local development.
 # Use the defaults in .env.example
 cp .env.example .env
 
-# Start services
+# Start services (uses environment variables from .env)
 docker compose up -d postgres redis mailpit
 
 # Run application
