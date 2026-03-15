@@ -3,6 +3,7 @@ package io.k48.fortyeightid.auth.internal;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import io.k48.fortyeightid.auth.JwtValidationPort;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.shared.exception.JwtSignatureException;
 import io.k48.fortyeightid.shared.exception.JwtTokenExpiredException;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class JwtTokenService {
+public class JwtTokenService implements JwtValidationPort {
 
     private final JwtConfig jwtConfig;
     private final JwtEncoder jwtEncoder;
@@ -66,7 +67,45 @@ public class JwtTokenService {
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
-    public Jwt validateToken(String token) {
+    @Override
+    public ValidatedJwt validateToken(String token) {
+        try {
+            Jwt jwt = jwtDecoder.decode(token);
+            return new SpringJwtWrapper(jwt);
+        } catch (JwtValidationException ex) {
+            if (ex.getErrors().stream().anyMatch(e ->
+                    e.getDescription().contains("expired"))) {
+                throw new JwtTokenExpiredException("Token has expired");
+            }
+            throw new JwtSignatureException("Token validation failed: " + ex.getMessage());
+        } catch (JwtException ex) {
+            throw new JwtSignatureException("Token is invalid: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Internal wrapper to adapt Spring's Jwt to our ValidatedJwt interface.
+     */
+    private static class SpringJwtWrapper implements ValidatedJwt {
+        private final Jwt jwt;
+
+        SpringJwtWrapper(Jwt jwt) {
+            this.jwt = jwt;
+        }
+
+        @Override
+        public String getSubject() {
+            return jwt.getSubject();
+        }
+
+        @Override
+        public Object getClaim(String name) {
+            return jwt.getClaim(name);
+        }
+    }
+
+    // Keep the old method for internal use
+    Jwt validateTokenInternal(String token) {
         try {
             return jwtDecoder.decode(token);
         } catch (JwtValidationException ex) {
@@ -90,6 +129,6 @@ public class JwtTokenService {
     }
 
     Map<String, Object> getClaims(String token) {
-        return validateToken(token).getClaims();
+        return validateTokenInternal(token).getClaims();
     }
 }

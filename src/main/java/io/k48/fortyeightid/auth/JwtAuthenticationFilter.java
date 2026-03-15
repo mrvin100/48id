@@ -4,7 +4,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import io.k48.fortyeightid.auth.internal.JwtTokenService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -21,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
-    private final JwtTokenService jwtTokenService;
+    private final JwtValidationPort jwtValidationPort;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -37,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         var token = header.substring(7);
 
         try {
-            var jwt = jwtTokenService.validateToken(token);
+            var jwt = jwtValidationPort.validateToken(token);
             var subject = jwt.getSubject();
             var rolesStr = (String) jwt.getClaim("role");
 

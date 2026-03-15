@@ -27,7 +27,7 @@ class IdentityController {
     @PreAuthorize("hasRole('API_CLIENT')")
     ResponseEntity<VerifyTokenResponse> verifyToken(@Valid @RequestBody VerifyTokenRequest request) {
         try {
-            Jwt jwt = jwtTokenService.validateToken(request.token());
+            Jwt jwt = jwtTokenService.validateTokenInternal(request.token());
             var userId = UUID.fromString(jwt.getSubject());
             var user = userQueryService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 

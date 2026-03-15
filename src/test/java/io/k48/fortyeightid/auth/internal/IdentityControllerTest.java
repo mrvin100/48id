@@ -33,7 +33,7 @@ class IdentityControllerTest {
         var jwt = createMockJwt(userId.toString());
         var user = createUser(userId, UserStatus.ACTIVE);
 
-        when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
+        when(jwtTokenService.validateTokenInternal("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
 
         var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));
@@ -45,7 +45,7 @@ class IdentityControllerTest {
 
     @Test
     void verifyToken_expiredJwt_returnsInvalidResponse() {
-        when(jwtTokenService.validateToken("expired-jwt"))
+        when(jwtTokenService.validateTokenInternal("expired-jwt"))
                 .thenThrow(new JwtTokenExpiredException("Token expired"));
 
         var response = identityController.verifyToken(new VerifyTokenRequest("expired-jwt"));
@@ -56,7 +56,7 @@ class IdentityControllerTest {
 
     @Test
     void verifyToken_invalidJwt_returnsInvalidResponse() {
-        when(jwtTokenService.validateToken("invalid-jwt"))
+        when(jwtTokenService.validateTokenInternal("invalid-jwt"))
                 .thenThrow(new JwtSignatureException("Invalid token"));
 
         var response = identityController.verifyToken(new VerifyTokenRequest("invalid-jwt"));
@@ -71,7 +71,7 @@ class IdentityControllerTest {
         var jwt = createMockJwt(userId.toString());
         var user = createUser(userId, UserStatus.SUSPENDED);
 
-        when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
+        when(jwtTokenService.validateTokenInternal("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
 
         var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));
@@ -85,7 +85,7 @@ class IdentityControllerTest {
         var userId = UUID.randomUUID();
         var jwt = createMockJwt(userId.toString());
 
-        when(jwtTokenService.validateToken("valid-jwt")).thenReturn(jwt);
+        when(jwtTokenService.validateTokenInternal("valid-jwt")).thenReturn(jwt);
         when(userQueryService.findById(userId)).thenReturn(Optional.empty());
 
         var response = identityController.verifyToken(new VerifyTokenRequest("valid-jwt"));

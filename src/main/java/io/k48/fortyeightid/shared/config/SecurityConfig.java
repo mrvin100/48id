@@ -3,7 +3,7 @@ package io.k48.fortyeightid.shared.config;
 import io.k48.fortyeightid.auth.ApiKeyAuthFilter;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.JwtAuthenticationFilter;
-import io.k48.fortyeightid.auth.internal.JwtTokenService;
+import io.k48.fortyeightid.auth.JwtValidationPort;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +36,7 @@ public class SecurityConfig {
 
     private final ProblemDetailAuthenticationEntryPoint authenticationEntryPoint;
     private final ProblemDetailAccessDeniedHandler accessDeniedHandler;
-    private final JwtTokenService jwtTokenService;
+    private final JwtValidationPort jwtValidationPort;
     private final ApiKeyManagementPort apiKeyManagementPort;
     private final RateLimitConfig rateLimitConfig;
     private final io.github.bucket4j.BucketConfiguration loginRateLimit;
@@ -45,7 +45,7 @@ public class SecurityConfig {
 
     public SecurityConfig(ProblemDetailAuthenticationEntryPoint authenticationEntryPoint,
                           ProblemDetailAccessDeniedHandler accessDeniedHandler,
-                          JwtTokenService jwtTokenService,
+                          JwtValidationPort jwtValidationPort,
                           ApiKeyManagementPort apiKeyManagementPort,
                           RateLimitConfig rateLimitConfig,
                           io.github.bucket4j.BucketConfiguration loginRateLimit,
@@ -53,7 +53,7 @@ public class SecurityConfig {
                           io.github.bucket4j.BucketConfiguration globalIpRateLimit) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
-        this.jwtTokenService = jwtTokenService;
+        this.jwtValidationPort = jwtValidationPort;
         this.apiKeyManagementPort = apiKeyManagementPort;
         this.rateLimitConfig = rateLimitConfig;
         this.loginRateLimit = loginRateLimit;
@@ -63,7 +63,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenService);
+        return new JwtAuthenticationFilter(jwtValidationPort);
     }
 
     @Bean

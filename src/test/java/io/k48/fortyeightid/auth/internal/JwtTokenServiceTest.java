@@ -80,7 +80,7 @@ class JwtTokenServiceTest {
 
         assertThat(token).isNotBlank();
 
-        var jwt = jwtTokenService.validateToken(token);
+        var jwt = jwtTokenService.validateTokenInternal(token);
         assertThat(jwt.getSubject()).isEqualTo(user.getId().toString());
         assertThat((String) jwt.getClaim("matricule")).isEqualTo("K48-2024-001");
         assertThat((String) jwt.getClaim("name")).isEqualTo("Test User");

@@ -1,7 +1,5 @@
 package io.k48.fortyeightid.auth;
 
-import io.k48.fortyeightid.auth.internal.JwtTokenService;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -9,23 +7,20 @@ import static org.mockito.Mockito.when;
 import io.k48.fortyeightid.shared.exception.JwtSignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.Instant;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 class JwtAuthenticationFilterTest {
 
-    private JwtTokenService jwtTokenService;
+    private JwtValidationPort jwtValidationPort;
     private JwtAuthenticationFilter filter;
 
     @BeforeEach
     void setUp() {
-        jwtTokenService = mock(JwtTokenService.class);
-        filter = new JwtAuthenticationFilter(jwtTokenService);
+        jwtValidationPort = mock(JwtValidationPort.class);
+        filter = new JwtAuthenticationFilter(jwtValidationPort);
         SecurityContextHolder.clearContext();
     }
 
@@ -36,9 +31,10 @@ class JwtAuthenticationFilterTest {
         var response = mock(HttpServletResponse.class);
         var chain = mock(FilterChain.class);
 
-        var jwt = new Jwt("valid-token", Instant.now(), Instant.now().plusSeconds(900),
-                Map.of("alg", "RS256"), Map.of("sub", "user-id", "role", "ROLE_STUDENT"));
-        when(jwtTokenService.validateToken("valid-token")).thenReturn(jwt);
+        var jwt = mock(JwtValidationPort.ValidatedJwt.class);
+        when(jwt.getSubject()).thenReturn("user-id");
+        when(jwt.getClaim("role")).thenReturn("ROLE_STUDENT");
+        when(jwtValidationPort.validateToken("valid-token")).thenReturn(jwt);
 
         filter.doFilterInternal(request, response, chain);
 
@@ -66,7 +62,7 @@ class JwtAuthenticationFilterTest {
         var response = mock(HttpServletResponse.class);
         var chain = mock(FilterChain.class);
 
-        when(jwtTokenService.validateToken("bad-token")).thenThrow(new JwtSignatureException("invalid"));
+        when(jwtValidationPort.validateToken("bad-token")).thenThrow(new JwtSignatureException("invalid"));
 
         filter.doFilterInternal(request, response, chain);
 
