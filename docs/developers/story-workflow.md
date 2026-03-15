@@ -8,7 +8,7 @@ This guide describes the complete workflow for implementing user stories from th
 - Java 21 installed
 - Gradle wrapper available (`./gradlew` or `gradlew.bat`)
 - IDE or editor of choice
-- Docker Desktop running (for Testcontainers tests if needed)
+- Docker Desktop running (PostgreSQL on port `5433`, Redis on `6379` via `docker compose up -d postgres redis`)
 
 ## Workflow overview
 
@@ -468,6 +468,7 @@ curl example or usage instructions
 - **Migrations:** `48id/src/main/resources/db/migration/`
 - **Templates:** `48id/src/main/resources/templates/`
 - **Docs:** `48id/docs/`
+- **Dev profile config:** `48id/src/main/resources/application-dev.properties`
 
 ### Common commands
 

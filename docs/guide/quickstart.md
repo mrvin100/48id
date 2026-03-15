@@ -26,8 +26,8 @@ cp .env.example .env
 Edit `.env` for your local environment. Minimum configuration:
 
 ```env
-# Database
-DATABASE_URL=jdbc:postgresql://localhost:5432/fortyeightid
+# Database (docker-compose maps PostgreSQL to 5433)
+DATABASE_URL=jdbc:postgresql://localhost:5433/fortyeightid
 DATABASE_USERNAME=fortyeightid
 DATABASE_PASSWORD=fortyeightid
 
@@ -45,19 +45,21 @@ MAIL_HOST=localhost
 MAIL_PORT=1025
 MAIL_FROM=no-reply@48id.local
 MAIL_LOGIN_URL=http://localhost:3000/login
-MAIL_ACTIVATION_URL=http://localhost:3000/activate
+MAIL_ACTIVATION_URL=http://localhost:3000/activate-account
 MAIL_RESET_PASSWORD_URL=http://localhost:3000/reset-password
 ```
 
 ## Step 3: Start infrastructure
 
 ```bash
-docker compose up -d
+docker compose up -d postgres redis
 ```
 
 This starts:
-- PostgreSQL on `localhost:5432`
+- PostgreSQL on `localhost:5433` (mapped to avoid conflicts with local installs)
 - Redis on `localhost:6379`
+
+> **Note:** The `docker-compose.yml` also defines an `app` service that builds and runs 48ID in a container. Use `docker compose up -d` (without specifying services) to start everything including the app container. For local development, starting only `postgres` and `redis` and running the app with Gradle is recommended.
 
 ## Step 4: Run the application
 
@@ -72,7 +74,7 @@ Windows:
 ```
 
 The application will:
-1. Connect to PostgreSQL
+1. Connect to PostgreSQL on port `5433`
 2. Run Flyway database migrations
 3. Start the Spring Boot application on port `8080`
 

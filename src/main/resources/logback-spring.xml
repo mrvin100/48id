@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <!-- Suppress logback internal status messages (e.g. unreferenced appender warnings) -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 
     <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="48ID"/>
     <springProperty scope="context" name="ACTIVE_PROFILES" source="spring.profiles.active" defaultValue="default"/>
