@@ -105,7 +105,6 @@ io.k48.fortyeightid
 
 - **Java 21+**
 - **Docker & Docker Compose**
-- **SMTP server** (or use [MailHog](https://github.com/mailhog/MailHog) for local dev)
 
 ### 1. Clone and configure
 
@@ -115,15 +114,19 @@ cd 48id
 cp .env.example .env
 ```
 
-Edit `.env` with your database and SMTP settings.
+The `.env.example` file contains all configuration options with documentation. For development, the defaults work out of the box.
 
-### 2. Start infrastructure
+### 2. Start infrastructure services
 
 ```bash
-docker compose up -d
+# Start PostgreSQL, Redis, and Mailpit (email testing)
+docker compose up -d db redis mailpit
 ```
 
-This starts PostgreSQL and Redis locally.
+This starts:
+- **PostgreSQL** on port 5433 (to avoid conflicts with local PostgreSQL)
+- **Redis** on port 6379 for sessions and rate limiting
+- **Mailpit** on port 8025 for email testing (Web UI: http://localhost:8025)
 
 ### 3. Run the application
 
@@ -142,6 +145,7 @@ This starts PostgreSQL and Redis locally.
 - **Swagger UI:** http://localhost:8080/api/v1/docs
 - **Health:** http://localhost:8080/actuator/health
 - **JWKS:** http://localhost:8080/.well-known/jwks.json
+- **Email Testing:** http://localhost:8025 (Mailpit Web UI)
 
 ---
 
@@ -223,6 +227,12 @@ We welcome contributions! Whether it's bug fixes, new features, or documentation
 **Development setup:**
 
 ```bash
+# Copy environment template
+cp .env.example .env
+
+# Start services
+docker compose up -d db redis mailpit
+
 # Run tests
 ./gradlew test
 
@@ -232,6 +242,8 @@ We welcome contributions! Whether it's bug fixes, new features, or documentation
 # Build
 ./gradlew build
 ```
+
+👉 **[Complete Environment Setup Guide](docs/guide/environment-setup.md)**
 
 ---
 

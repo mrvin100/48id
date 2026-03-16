@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17
-    container_name: 48id-postgres
+    container_name: 48id-db
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-fortyeightid}
       POSTGRES_USER: ${DATABASE_USERNAME:-fortyeightid}
