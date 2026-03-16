@@ -8,7 +8,7 @@ This guide describes the complete workflow for implementing user stories from th
 - Java 21 installed
 - Gradle wrapper available (`./gradlew` or `gradlew.bat`)
 - IDE or editor of choice
-- Docker Desktop running (PostgreSQL on port `5433`, Redis on `6379` via `docker compose up -d postgres redis`)
+- Docker Desktop running (PostgreSQL on port `5433`, Redis on `6379` via `docker compose up -d db redis`)
 
 ## Workflow overview
 

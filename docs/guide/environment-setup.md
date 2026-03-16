@@ -9,7 +9,7 @@ This guide explains how to configure 48ID for different environments (developmen
 cp .env.example .env
 
 # 2. Start infrastructure (PostgreSQL + Redis)
-docker compose up -d postgres redis
+docker compose up -d db redis
 
 # 3. Run the application
 ./gradlew bootRun
@@ -45,7 +45,7 @@ That's it! The default configuration works for local development.
 cp .env.example .env
 
 # Start services (uses environment variables from .env)
-docker compose up -d postgres redis mailpit
+docker compose up -d db redis mailpit
 
 # Run application
 ./gradlew bootRun
@@ -259,7 +259,7 @@ All available configuration options:
 
 ```bash
 # Check if PostgreSQL is running
-docker ps | grep postgres
+docker ps | grep 48id-postgres
 
 # Check port mapping (should be 5433:5432)
 docker compose ps

@@ -54,7 +54,7 @@ MAIL_RESET_PASSWORD_URL=http://localhost:3000/reset-password
 ## Step 3: Start infrastructure
 
 ```bash
-docker compose up -d postgres redis mailpit
+docker compose up -d db redis mailpit
 ```
 
 This starts:
@@ -212,12 +212,12 @@ SERVER_PORT=8081
 
 Make sure PostgreSQL is running:
 ```bash
-docker ps | grep postgres
+docker ps | grep 48id-postgres
 ```
 
 If not running:
 ```bash
-docker compose up -d postgres
+docker compose up -d db
 ```
 
 ### Redis connection error
