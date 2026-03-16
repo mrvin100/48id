@@ -188,10 +188,10 @@ Spring Boot uses a **hierarchical property loading system** where properties are
 
 ```mermaid
 graph TD
-    A[Environment Variables<br/>📁 .env file] --> B[Profile Properties<br/>📄 application-{profile}.properties]
-    B --> C[Base Properties<br/>📄 application.properties]
+    A["Environment Variables<br/>(.env file)"] --> B["Profile Properties<br/>(application-profile.properties)"]
+    B --> C["Base Properties<br/>(application.properties)"]
     
-    A -.->|"HIGHEST PRIORITY<br/>Overrides everything"| D[Final Configuration]
+    A -.->|"HIGHEST PRIORITY<br/>Overrides everything"| D["Final Configuration"]
     B -.->|"MEDIUM PRIORITY<br/>Overrides base"| D
     C -.->|"LOWEST PRIORITY<br/>Default values"| D
     
@@ -208,22 +208,22 @@ sequenceDiagram
     participant App as Spring Boot App
     participant Env as Environment Variables
     participant Base as application.properties
-    participant Profile as application-{profile}.properties
+    participant Profile as application-profile.properties
     participant Config as Final Configuration
     
     Note over App: Application starts with SPRING_PROFILES_ACTIVE=dev
     
     App->>Base: 1. Load base properties
-    Base-->>App: logging.level.root=INFO<br/>springdoc.swagger-ui.enabled=true
+    Base-->>App: logging.level.root=INFO, springdoc.swagger-ui.enabled=true
     
     App->>Profile: 2. Load application-dev.properties
-    Profile-->>App: logging.level.root=DEBUG<br/>spring.jpa.show-sql=true
+    Profile-->>App: logging.level.root=DEBUG, spring.jpa.show-sql=true
     
     App->>Env: 3. Resolve environment variables
     Env-->>App: DATABASE_URL=jdbc:postgresql://localhost:5433/...
     
     App->>Config: 4. Merge all properties
-    Note over Config: Final result:<br/>logging.level.root=DEBUG (from profile)<br/>springdoc.swagger-ui.enabled=true (from base)<br/>spring.jpa.show-sql=true (from profile)<br/>DATABASE_URL=... (from env)
+    Note over Config: Final result: logging.level.root=DEBUG (from profile), springdoc.swagger-ui.enabled=true (from base), spring.jpa.show-sql=true (from profile), DATABASE_URL=... (from env)
 ```
 
 ### Property Resolution Examples
@@ -233,28 +233,28 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "1. Base Properties"
-        A1[logging.level.io.k48=INFO]
-        A2[spring.jpa.show-sql=false]
-        A3[springdoc.swagger-ui.enabled=true]
+        A1["logging.level.io.k48=INFO"]
+        A2["spring.jpa.show-sql=false"]
+        A3["springdoc.swagger-ui.enabled=true"]
     end
     
     subgraph "2. Dev Profile Override"
-        B1[logging.level.io.k48=DEBUG]
-        B2[spring.jpa.show-sql=true]
-        B3[logging.level.hibernate.SQL=DEBUG]
+        B1["logging.level.io.k48=DEBUG"]
+        B2["spring.jpa.show-sql=true"]
+        B3["logging.level.hibernate.SQL=DEBUG"]
     end
     
     subgraph "3. Environment Variables"
-        C1[DATABASE_URL=jdbc:postgresql://localhost:5433/...]
-        C2[SPRING_PROFILES_ACTIVE=dev]
+        C1["DATABASE_URL=jdbc:postgresql://localhost:5433/..."]
+        C2["SPRING_PROFILES_ACTIVE=dev"]
     end
     
     subgraph "4. Final Configuration"
-        D1[logging.level.io.k48=DEBUG ✓]
-        D2[spring.jpa.show-sql=true ✓]
-        D3[springdoc.swagger-ui.enabled=true ✓]
-        D4[logging.level.hibernate.SQL=DEBUG ✓]
-        D5[DATABASE_URL=jdbc:postgresql://localhost:5433/... ✓]
+        D1["logging.level.io.k48=DEBUG (FINAL)"]
+        D2["spring.jpa.show-sql=true (FINAL)"]
+        D3["springdoc.swagger-ui.enabled=true (FINAL)"]
+        D4["logging.level.hibernate.SQL=DEBUG (FINAL)"]
+        D5["DATABASE_URL=jdbc:postgresql://localhost:5433/... (FINAL)"]
     end
     
     A1 -.->|overridden| B1
@@ -279,29 +279,29 @@ graph LR
 ```mermaid
 graph LR
     subgraph "1. Base Properties"
-        A1[logging.level.root=INFO]
-        A2[springdoc.swagger-ui.enabled=true]
-        A3[management.endpoints.include=health,info,metrics]
+        A1["logging.level.root=INFO"]
+        A2["springdoc.swagger-ui.enabled=true"]
+        A3["management.endpoints.include=health,info,metrics"]
     end
     
     subgraph "2. Prod Profile Override"
-        B1[logging.level.root=WARN]
-        B2[springdoc.swagger-ui.enabled=false]
-        B3[management.endpoints.include=health,info]
-        B4[server.compression.enabled=true]
+        B1["logging.level.root=WARN"]
+        B2["springdoc.swagger-ui.enabled=false"]
+        B3["management.endpoints.include=health,info"]
+        B4["server.compression.enabled=true"]
     end
     
     subgraph "3. Environment Variables"
-        C1[DATABASE_URL=jdbc:postgresql://prod-db:5432/...]
-        C2[SPRINGDOC_SWAGGER_ENABLED=false]
+        C1["DATABASE_URL=jdbc:postgresql://prod-db:5432/..."]
+        C2["SPRINGDOC_SWAGGER_ENABLED=false"]
     end
     
     subgraph "4. Final Configuration"
-        D1[logging.level.root=WARN ✓]
-        D2[springdoc.swagger-ui.enabled=false ✓]
-        D3[management.endpoints.include=health,info ✓]
-        D4[server.compression.enabled=true ✓]
-        D5[DATABASE_URL=jdbc:postgresql://prod-db:5432/... ✓]
+        D1["logging.level.root=WARN (FINAL)"]
+        D2["springdoc.swagger-ui.enabled=false (FINAL)"]
+        D3["management.endpoints.include=health,info (FINAL)"]
+        D4["server.compression.enabled=true (FINAL)"]
+        D5["DATABASE_URL=jdbc:postgresql://prod-db:5432/... (FINAL)"]
     end
     
     A1 -.->|overridden| B1
@@ -405,30 +405,30 @@ Let's trace a complete property resolution:
 flowchart TD
     Start([Application Starts]) --> CheckProfile{Check SPRING_PROFILES_ACTIVE}
     
-    CheckProfile -->|dev| LoadDev[Load application-dev.properties]
-    CheckProfile -->|prod| LoadProd[Load application-prod.properties]
-    CheckProfile -->|test| LoadTest[Load application-test.properties]
+    CheckProfile -->|dev| LoadDev["Load application-dev.properties"]
+    CheckProfile -->|prod| LoadProd["Load application-prod.properties"]
+    CheckProfile -->|test| LoadTest["Load application-test.properties"]
     
-    LoadDev --> DevResult[springdoc.swagger-ui.enabled=true<br/>📝 From base properties<br/>🔧 Not overridden in dev profile]
-    LoadProd --> ProdResult[springdoc.swagger-ui.enabled=false<br/>📝 Overridden in prod profile<br/>🔒 Security: disabled in production]
-    LoadTest --> TestResult[springdoc.swagger-ui.enabled=false<br/>📝 Overridden in test profile<br/>⚡ Performance: disabled for faster tests]
+    LoadDev --> DevResult["springdoc.swagger-ui.enabled=true<br/>From base properties<br/>Not overridden in dev profile"]
+    LoadProd --> ProdResult["springdoc.swagger-ui.enabled=false<br/>Overridden in prod profile<br/>Security: disabled in production"]
+    LoadTest --> TestResult["springdoc.swagger-ui.enabled=false<br/>Overridden in test profile<br/>Performance: disabled for faster tests"]
     
-    DevResult --> EnvCheck1{Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?}
-    ProdResult --> EnvCheck2{Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?}
-    TestResult --> EnvCheck3{Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?}
+    DevResult --> EnvCheck1{"Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?"}
+    ProdResult --> EnvCheck2{"Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?"}
+    TestResult --> EnvCheck3{"Environment Variable<br/>SPRINGDOC_SWAGGER_ENABLED?"}
     
-    EnvCheck1 -->|Set| EnvOverride1[Use Environment Value]
-    EnvCheck1 -->|Not Set| FinalDev[✅ Final: true]
+    EnvCheck1 -->|Set| EnvOverride1["Use Environment Value"]
+    EnvCheck1 -->|Not Set| FinalDev["Final: true"]
     
-    EnvCheck2 -->|Set| EnvOverride2[Use Environment Value]
-    EnvCheck2 -->|Not Set| FinalProd[✅ Final: false]
+    EnvCheck2 -->|Set| EnvOverride2["Use Environment Value"]
+    EnvCheck2 -->|Not Set| FinalProd["Final: false"]
     
-    EnvCheck3 -->|Set| EnvOverride3[Use Environment Value]
-    EnvCheck3 -->|Not Set| FinalTest[✅ Final: false]
+    EnvCheck3 -->|Set| EnvOverride3["Use Environment Value"]
+    EnvCheck3 -->|Not Set| FinalTest["Final: false"]
     
-    EnvOverride1 --> FinalEnv1[✅ Final: Environment Value]
-    EnvOverride2 --> FinalEnv2[✅ Final: Environment Value]
-    EnvOverride3 --> FinalEnv3[✅ Final: Environment Value]
+    EnvOverride1 --> FinalEnv1["Final: Environment Value"]
+    EnvOverride2 --> FinalEnv2["Final: Environment Value"]
+    EnvOverride3 --> FinalEnv3["Final: Environment Value"]
     
     style Start fill:#74b9ff,color:#fff
     style FinalDev fill:#00b894,color:#fff
