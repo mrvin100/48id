@@ -35,10 +35,22 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment Files ###
 .env
 .env.local
+.env.*.local
+.env.dev
+.env.test
+.env.prod
+
+### Security ###
 *.pem
 *.key
 !src/main/resources/keys/*.pem
+
+### Docker ###
 docker-compose.override.yml
+
+### Logs ###
 *.log

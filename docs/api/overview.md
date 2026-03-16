@@ -68,10 +68,16 @@ Date-time query parameters use ISO 8601 format, for example:
 Implemented rate limits in the MVP:
 
 - login: 5 requests per 15 minutes per matricule
-- forgot password: 3 requests per hour per email
+- forgot password: 3 requests per hour per email/IP
 - global IP protection: 100 requests per minute per IP
 
 When a limit is exceeded, the service returns HTTP `429 Too Many Requests`.
+
+Rate limit state is tracked in-memory per instance. The following headers are exposed on responses:
+
+- `X-RateLimit-Limit`
+- `X-RateLimit-Remaining`
+- `X-RateLimit-Reset`
 
 ## Interactive API docs
 

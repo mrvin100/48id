@@ -86,11 +86,13 @@ The included `Dockerfile` uses multi-stage build:
 # Stage 1: Build
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
+ARG BUILD_TIMESTAMP
+RUN echo "Building at: $BUILD_TIMESTAMP"
 COPY gradle/ gradle/
 COPY gradlew build.gradle settings.gradle ./
 RUN ./gradlew dependencies --no-daemon || true
 COPY src/ src/
-RUN ./gradlew bootJar --no-daemon -x test
+RUN ./gradlew clean bootJar --no-daemon -x test
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre
@@ -478,11 +480,11 @@ Configure your load balancer or ingress to:
 48ID includes security headers by default:
 
 ```
-Content-Security-Policy: default-src 'none'; ...
+Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=()
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 ```
 
 ### Disable Swagger in Production

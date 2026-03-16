@@ -33,6 +33,7 @@ docs/
 - 🚀 **[Quick Start](guide/quickstart.md)** — Get 48ID running in 5 minutes
 - 📖 **[Introduction](guide/introduction.md)** — What is 48ID and the K48 ecosystem
 - 🏗️ **[Architecture](guide/architecture.md)** — System design and module structure
+- ⚙️ **[Environment Setup](guide/environment-setup.md)** — Configure dev, test, and production environments
 
 ### Using 48ID
 

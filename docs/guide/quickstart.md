@@ -6,7 +6,7 @@ Get 48ID running locally in under 5 minutes.
 
 - **Java 21+** ([Download](https://adoptium.net/))
 - **Docker & Docker Compose** ([Download](https://www.docker.com/))
-- **SMTP server** (or use [MailHog](https://github.com/mailhog/MailHog) for local testing)
+- **SMTP server** (or use [Mailpit](https://mailpit.axllent.org/) for local testing)
 
 ## Step 1: Clone the repository
 
@@ -23,11 +23,13 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
+This creates your local configuration with sensible defaults for development.
+
 Edit `.env` for your local environment. Minimum configuration:
 
 ```env
-# Database
-DATABASE_URL=jdbc:postgresql://localhost:5432/fortyeightid
+# Database (docker-compose maps PostgreSQL to 5433)
+DATABASE_URL=jdbc:postgresql://localhost:5433/fortyeightid
 DATABASE_USERNAME=fortyeightid
 DATABASE_PASSWORD=fortyeightid
 
@@ -40,24 +42,27 @@ JWT_ISSUER=http://localhost:8080
 JWT_RSA_PUBLIC_KEY=classpath:keys/public.pem
 JWT_RSA_PRIVATE_KEY=classpath:keys/private.pem
 
-# Mail (use MailHog for local dev)
+# Mail (use Mailpit for local dev)
 MAIL_HOST=localhost
 MAIL_PORT=1025
 MAIL_FROM=no-reply@48id.local
 MAIL_LOGIN_URL=http://localhost:3000/login
-MAIL_ACTIVATION_URL=http://localhost:3000/activate
+MAIL_ACTIVATION_URL=http://localhost:3000/activate-account
 MAIL_RESET_PASSWORD_URL=http://localhost:3000/reset-password
 ```
 
 ## Step 3: Start infrastructure
 
 ```bash
-docker compose up -d
+docker compose up -d db redis mailpit
 ```
 
 This starts:
-- PostgreSQL on `localhost:5432`
+- PostgreSQL on `localhost:5433` (mapped to avoid conflicts with local installs)
 - Redis on `localhost:6379`
+- Mailpit (email testing) on `localhost:1025` (SMTP) and `localhost:8025` (Web UI)
+
+> **Note:** Docker Compose automatically loads environment variables from your `.env` file. The services use the same configuration as your local development setup. The `docker-compose.yml` also defines an `app` service that builds and runs 48ID in a container. Use `docker compose up -d` (without specifying services) to start everything including the app container.
 
 ## Step 4: Run the application
 
@@ -72,7 +77,7 @@ Windows:
 ```
 
 The application will:
-1. Connect to PostgreSQL
+1. Connect to PostgreSQL on port `5433`
 2. Run Flyway database migrations
 3. Start the Spring Boot application on port `8080`
 
@@ -93,6 +98,15 @@ You should see:
   "status": "UP"
 }
 ```
+
+### Email Testing with Mailpit
+
+Mailpit captures all outgoing emails for local testing:
+
+- **SMTP Server:** `localhost:1025` (configured in `.env`)
+- **Web UI:** http://localhost:8025
+
+All activation emails, password reset emails, and other notifications will appear in the Mailpit web interface instead of being sent to real email addresses.
 
 ## Step 6: Test the API
 
@@ -167,13 +181,14 @@ curl -X GET http://localhost:8080/api/v1/me \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-## Step 7: Optional — Set up MailHog for email testing
+## Step 7: Optional — Email Testing with Mailpit
 
-If you want to test email activation and password reset locally:
+Mailpit is already included in the docker-compose setup and provides a modern email testing interface:
 
-```bash
-docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
-```
+- **Web UI:** http://localhost:8025
+- **SMTP Server:** `localhost:1025` (already configured)
+
+All emails (activation, password reset, etc.) will appear in the Mailpit web interface instead of being sent to real addresses.
 
 - **SMTP server:** `localhost:1025`
 - **Web UI:** http://localhost:8025
@@ -197,12 +212,12 @@ SERVER_PORT=8081
 
 Make sure PostgreSQL is running:
 ```bash
-docker ps | grep postgres
+docker ps | grep 48id-postgres
 ```
 
 If not running:
 ```bash
-docker compose up -d postgres
+docker compose up -d db
 ```
 
 ### Redis connection error

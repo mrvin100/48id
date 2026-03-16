@@ -369,6 +369,8 @@ graph TD
 | XSS | JSON responses, no HTML rendering |
 | CSRF | Stateless API, no cookies for auth |
 | Enumeration | Generic error messages, email enumeration protection |
+| Clickjacking | `X-Frame-Options: DENY`, `frame-ancestors 'none'` in CSP |
+| Payment API abuse | `payment=()` in Permissions-Policy |
 
 ## Performance Considerations
 

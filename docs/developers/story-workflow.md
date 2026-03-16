@@ -8,7 +8,7 @@ This guide describes the complete workflow for implementing user stories from th
 - Java 21 installed
 - Gradle wrapper available (`./gradlew` or `gradlew.bat`)
 - IDE or editor of choice
-- Docker Desktop running (for Testcontainers tests if needed)
+- Docker Desktop running (PostgreSQL on port `5433`, Redis on `6379` via `docker compose up -d db redis`)
 
 ## Workflow overview
 
@@ -306,11 +306,11 @@ Create a checklist:
 If your change affects:
 
 - **API endpoints** → update `docs/api/*.md`
-- **Environment variables** → update `docs/deployment/overview.md` and `.env.example`
-- **Authentication/security** → update `docs/authentication/flows.md` and `docs/security/overview.md`
+- **Environment variables** → update `docs/guide/deployment.md`, `docs/guide/environment-setup.md`, and `.env.example`
+- **Authentication/security** → update `docs/guide/authentication.md` and `docs/guide/architecture.md`
 - **Database migrations** → add inline SQL comments
-- **Architecture** → update `docs/overview/architecture.md`
-- **Integration patterns** → update `docs/integration-guides/getting-started.md`
+- **Architecture** → update `docs/guide/architecture.md`
+- **Integration patterns** → update `docs/guide/integration.md`
 
 See the [PR checklist template](../../.github/pull_request_template.md) for full guidance.
 
@@ -468,6 +468,7 @@ curl example or usage instructions
 - **Migrations:** `48id/src/main/resources/db/migration/`
 - **Templates:** `48id/src/main/resources/templates/`
 - **Docs:** `48id/docs/`
+- **Dev profile config:** `48id/src/main/resources/application-dev.properties`
 
 ### Common commands
 

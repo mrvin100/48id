@@ -1,17 +1,17 @@
 services:
-  postgres:
+  db:
     image: postgres:17
     container_name: 48id-postgres
     environment:
-      POSTGRES_DB: fortyeightid
-      POSTGRES_USER: fortyeightid
-      POSTGRES_PASSWORD: fortyeightid
+      POSTGRES_DB: ${DATABASE_NAME:-fortyeightid}
+      POSTGRES_USER: ${DATABASE_USERNAME:-fortyeightid}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-fortyeightid}
     ports:
-      - "5432:5432"
+      - "${DATABASE_HOST_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fortyeightid"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-fortyeightid}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,7 +20,7 @@ services:
     image: redis:7.4-alpine
     container_name: 48id-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -28,6 +28,64 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Mailpit - Email testing tool for development
+  # Web UI: http://localhost:8025
+  # SMTP: localhost:1025
+  mailpit:
+    image: axllent/mailpit:v1.29.3
+    container_name: 48id-mailpit
+    ports:
+      - "${MAIL_PORT:-1025}:1025"  # SMTP server
+      - "${MAILPIT_UI_PORT:-8025}:8025"  # Web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025/api/v1/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: 48id-app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/${DATABASE_NAME:-fortyeightid}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-fortyeightid}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fortyeightid}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@48id.local}
+      MAIL_LOGIN_URL: ${MAIL_LOGIN_URL:-http://localhost:3000/login}
+      MAIL_ACTIVATION_URL: ${MAIL_ACTIVATION_URL:-http://localhost:3000/activate-account}
+      MAIL_RESET_PASSWORD_URL: ${MAIL_RESET_PASSWORD_URL:-http://localhost:3000/reset-password}
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8080}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY:-900}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY:-86400}
+      JWT_RSA_PUBLIC_KEY: ${JWT_RSA_PUBLIC_KEY:-classpath:keys/public.pem}
+      JWT_RSA_PRIVATE_KEY: ${JWT_RSA_PRIVATE_KEY:-classpath:keys/private.pem}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      API_PREFIX: ${API_PREFIX:-/api/v1}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRINGDOC_SWAGGER_ENABLED: ${SPRINGDOC_SWAGGER_ENABLED:-true}
+      OPENAPI_SERVERS: ${OPENAPI_SERVERS:-http://localhost:8080}
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
 
 volumes:
   pgdata:

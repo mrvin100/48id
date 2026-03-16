@@ -319,7 +319,7 @@ Enforced server-side:
 | Endpoint | Limit |
 |----------|-------|
 | `/auth/login` | 5 attempts per 15 minutes per matricule |
-| `/auth/forgot-password` | 3 requests per hour per email |
+| `/auth/forgot-password` | 3 requests per hour per email/IP |
 | Global (per IP) | 100 requests per minute |
 
 ### Audit Logging
