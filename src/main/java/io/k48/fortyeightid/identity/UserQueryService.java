@@ -58,4 +58,24 @@ public class UserQueryService {
     public User save(User user) {
         return userRepository.save(user);
     }
+
+    public long count() {
+        return userRepository.count();
+    }
+
+    public long countByStatus(UserStatus status) {
+        return userRepository.countByStatus(status);
+    }
+
+    public long countByRolesContaining(Role role) {
+        return userRepository.countByRolesContaining(role);
+    }
+
+    public boolean existsByMatricule(String matricule) {
+        return userRepository.existsByMatricule(matricule);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 }
