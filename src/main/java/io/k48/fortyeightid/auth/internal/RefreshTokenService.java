@@ -85,5 +85,19 @@ public class RefreshTokenService {
         }
     }
 
-    record RefreshTokenResult(UUID userId, String rawToken) {}
+    UUID getUserIdFromToken(String rawToken) {
+        var hash = sha256(rawToken);
+        var userId = redisTemplate.opsForValue().get(RT_PREFIX + hash);
+        
+        if (userId == null) {
+            return null;
+        }
+        
+        try {
+            return UUID.fromString(userId);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }
+    record RefreshTokenResult(UUID userId, String rawToken) {}

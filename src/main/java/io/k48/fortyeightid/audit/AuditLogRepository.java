@@ -14,8 +14,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             SELECT a FROM AuditLog a
             WHERE (:eventType IS NULL OR a.action = :eventType)
               AND (:userId IS NULL OR a.userId = :userId)
-              AND (:from IS NULL OR a.createdAt >= :from)
-              AND (:to IS NULL OR a.createdAt <= :to)
+              AND (CAST(:from AS timestamp) IS NULL OR a.createdAt >= :from)
+              AND (CAST(:to AS timestamp) IS NULL OR a.createdAt <= :to)
             ORDER BY a.createdAt DESC
             """)
     Page<AuditLog> findWithFilters(
@@ -29,8 +29,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             SELECT a FROM AuditLog a
             WHERE a.userId = :userId
               AND a.action LIKE 'LOGIN%'
-              AND (:from IS NULL OR a.createdAt >= :from)
-              AND (:to IS NULL OR a.createdAt <= :to)
+              AND (CAST(:from AS timestamp) IS NULL OR a.createdAt >= :from)
+              AND (CAST(:to AS timestamp) IS NULL OR a.createdAt <= :to)
             ORDER BY a.createdAt DESC
             """)
     Page<AuditLog> findLoginHistory(

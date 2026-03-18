@@ -43,6 +43,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             List<SimpleGrantedAuthority> authorities = List.of();
             if (rolesStr != null && !rolesStr.isBlank()) {
                 authorities = Arrays.stream(rolesStr.split(","))
+                        .map(role -> role.trim())
+                        .filter(role -> !role.isEmpty())
                         .map(SimpleGrantedAuthority::new)
                         .toList();
             }
