@@ -75,6 +75,12 @@ class AuthService {
         // Successful login - reset failed attempts
         loginAttemptService.resetFailedAttempts(request.matricule());
 
+        // Log successful login audit event
+        auditService.log(user.getId(), "LOGIN_SUCCESS", Map.of(
+                "userId", user.getId().toString(),
+                "matricule", user.getMatricule()
+        ));
+
         // Update last login timestamp
         user.setLastLoginAt(OffsetDateTime.now());
         userQueryService.save(user);
@@ -129,7 +135,18 @@ class AuthService {
     }
 
     void logout(LogoutRequest request) {
+        // Extract user ID from refresh token for audit logging
+        UUID userId = refreshTokenService.getUserIdFromToken(request.refreshToken());
+        
+        // Revoke the token
         refreshTokenService.revokeToken(request.refreshToken());
+        
+        // Log audit event if we could extract user ID
+        if (userId != null) {
+            auditService.log(userId, "LOGOUT", Map.of(
+                    "userId", userId.toString()
+            ));
+        }
     }
 
     @org.springframework.transaction.annotation.Transactional

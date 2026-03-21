@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("${fortyeightid.api.prefix}/admin/audit-log")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('SYSTEM_OPERATOR')")
 @RequiredArgsConstructor
 class AdminAuditController {
 

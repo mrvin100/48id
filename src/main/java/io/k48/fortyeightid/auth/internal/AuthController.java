@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final BootstrapService bootstrapService;
 
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticate user with matricule and password. Returns JWT access token and refresh token.")
@@ -104,5 +106,28 @@ class AuthController {
     ResponseEntity<ActivateAccountResponse> activateAccount(@Valid @RequestBody ActivateAccountRequest request) {
         passwordResetService.activateAccount(request.token());
         return ResponseEntity.ok(new ActivateAccountResponse("Account activated successfully. You can now log in with your temporary password and change it on first login."));
+    }
+
+    @PostMapping("/bootstrap")
+    @Operation(summary = "Create first admin user", description = "Bootstrap endpoint to create the first admin user when no admin exists. This endpoint automatically disables itself after first use.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "First admin user created successfully", content = @Content(schema = @Schema(implementation = BootstrapResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data or validation failed"),
+        @ApiResponse(responseCode = "409", description = "Admin users already exist - bootstrap not available", content = @Content(schema = @Schema(example = "{\"type\":\"...\",\"detail\":\"Cannot create admin user - admin users already exist in the system\"}"))),
+        @ApiResponse(responseCode = "422", description = "Matricule or email already exists")
+    })
+    ResponseEntity<BootstrapResponse> bootstrap(@Valid @RequestBody BootstrapRequest request) {
+        var response = bootstrapService.createFirstAdmin(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/bootstrap/available")
+    @Operation(summary = "Check bootstrap availability", description = "Check if the bootstrap endpoint is available (i.e., no admin users exist).")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Bootstrap availability status", content = @Content(schema = @Schema(example = "{\"available\": true}")))
+    })
+    ResponseEntity<java.util.Map<String, Boolean>> isBootstrapAvailable() {
+        boolean available = bootstrapService.isBootstrapAvailable();
+        return ResponseEntity.ok(java.util.Map.of("available", available));
     }
 }
