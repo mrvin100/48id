@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.shared.config;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKeyAuthFilter;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.JwtAuthenticationFilter;
@@ -9,6 +10,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +40,7 @@ public class SecurityConfig {
     private final ProblemDetailAccessDeniedHandler accessDeniedHandler;
     private final JwtValidationPort jwtValidationPort;
     private final ApiKeyManagementPort apiKeyManagementPort;
+    private final AuditService auditService;
     private final RateLimitConfig rateLimitConfig;
     private final io.github.bucket4j.BucketConfiguration loginRateLimit;
     private final io.github.bucket4j.BucketConfiguration forgotPasswordRateLimit;
@@ -47,6 +50,7 @@ public class SecurityConfig {
                           ProblemDetailAccessDeniedHandler accessDeniedHandler,
                           JwtValidationPort jwtValidationPort,
                           ApiKeyManagementPort apiKeyManagementPort,
+                          @Lazy AuditService auditService,
                           RateLimitConfig rateLimitConfig,
                           io.github.bucket4j.BucketConfiguration loginRateLimit,
                           io.github.bucket4j.BucketConfiguration forgotPasswordRateLimit,
@@ -55,6 +59,7 @@ public class SecurityConfig {
         this.accessDeniedHandler = accessDeniedHandler;
         this.jwtValidationPort = jwtValidationPort;
         this.apiKeyManagementPort = apiKeyManagementPort;
+        this.auditService = auditService;
         this.rateLimitConfig = rateLimitConfig;
         this.loginRateLimit = loginRateLimit;
         this.forgotPasswordRateLimit = forgotPasswordRateLimit;
@@ -68,7 +73,7 @@ public class SecurityConfig {
 
     @Bean
     public ApiKeyAuthFilter apiKeyAuthFilter() {
-        return new ApiKeyAuthFilter(apiKeyManagementPort);
+        return new ApiKeyAuthFilter(apiKeyManagementPort, auditService);
     }
 
     // Not @Bean — prevents Tomcat from registering these as servlet filters
