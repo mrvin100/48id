@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.admin.internal;
+package io.k48.fortyeightid.operator.internal;
 
 import io.k48.fortyeightid.audit.AuditLog;
 import io.k48.fortyeightid.audit.AuditLogRepository;
@@ -17,44 +17,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${fortyeightid.api.prefix}/admin/audit-log")
-@PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
+@RequestMapping("${fortyeightid.api.prefix}/operator/audit-log")
+@PreAuthorize("hasRole('OPERATOR')")
 @RequiredArgsConstructor
-class AdminAuditController {
+class OperatorAuditController {
 
     private final AuditLogRepository auditLogRepository;
 
     @GetMapping
-    ResponseEntity<Page<AuditLogResponse>> getAuditLog(
+    ResponseEntity<Page<OperatorAuditLogResponse>> getAuditLog(
             @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) String eventType,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        var auditPage = auditLogRepository.findWithFilters(eventType, userId, from, to, pageable);
-
-        var responsePage = auditPage.map(this::toResponse);
-
-        return ResponseEntity.ok(responsePage);
+        var page = auditLogRepository.findWithFilters(eventType, userId, from, to, pageable);
+        return ResponseEntity.ok(page.map(this::toResponse));
     }
 
-    @GetMapping("/login-history")
-    ResponseEntity<Page<AuditLogResponse>> getLoginHistory(
-            @RequestParam UUID userId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @PageableDefault(size = 20) Pageable pageable) {
-
-        var auditPage = auditLogRepository.findLoginHistory(userId, from, to, pageable);
-
-        var responsePage = auditPage.map(this::toResponse);
-
-        return ResponseEntity.ok(responsePage);
-    }
-
-    private AuditLogResponse toResponse(AuditLog audit) {
-        return new AuditLogResponse(
+    private OperatorAuditLogResponse toResponse(AuditLog audit) {
+        return new OperatorAuditLogResponse(
                 audit.getId(),
                 audit.getUserId(),
                 audit.getAction(),
