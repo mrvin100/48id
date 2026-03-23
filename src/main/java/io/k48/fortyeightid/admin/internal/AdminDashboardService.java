@@ -1,10 +1,16 @@
 package io.k48.fortyeightid.admin.internal;
 
+import io.k48.fortyeightid.admin.DashboardQueryPort;
 import io.k48.fortyeightid.audit.AuditLogRepository;
+import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
+import io.k48.fortyeightid.shared.exception.UserNotFoundException;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-class AdminDashboardService {
+class AdminDashboardService implements DashboardQueryPort {
 
     private final UserQueryService userQueryService;
     private final AuditLogRepository auditLogRepository;
@@ -105,5 +111,29 @@ class AdminDashboardService {
             // Fallback to empty data if repository methods don't exist yet
             return new RecentActivityResponse(List.of());
         }
+    }
+
+    // --- DashboardQueryPort implementation ---
+
+    @Override
+    public DashboardSnapshot getDashboardSnapshot() {
+        long totalUsers = userQueryService.count();
+        long activeUsers = userQueryService.countByStatus(UserStatus.ACTIVE);
+        long pendingUsers = userQueryService.countByStatus(UserStatus.PENDING_ACTIVATION);
+        long suspendedUsers = userQueryService.countByStatus(UserStatus.SUSPENDED);
+        long activeSessions = auditLogRepository.countActiveSessionsSince(
+                Instant.now().minusSeconds(24 * 60 * 60));
+        return new DashboardSnapshot(totalUsers, activeUsers, activeSessions, pendingUsers, suspendedUsers);
+    }
+
+    @Override
+    public Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable) {
+        return userQueryService.findAll(status, batch, role, pageable);
+    }
+
+    @Override
+    public User getUser(UUID userId) {
+        return userQueryService.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
     }
 }
