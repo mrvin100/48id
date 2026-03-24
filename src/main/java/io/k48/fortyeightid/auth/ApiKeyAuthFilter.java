@@ -1,24 +1,30 @@
 package io.k48.fortyeightid.auth;
 
+import io.k48.fortyeightid.audit.AuditService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@RequiredArgsConstructor
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(ApiKeyAuthFilter.class);
     private static final String API_KEY_HEADER = "X-API-Key";
 
     private final ApiKeyManagementPort apiKeyService;
+    private final AuditService auditService;
+
+    public ApiKeyAuthFilter(ApiKeyManagementPort apiKeyService, AuditService auditService) {
+        this.apiKeyService = apiKeyService;
+        this.auditService = auditService;
+    }
 
     @Value("${fortyeightid.api.prefix:/api/v1}")
     private String apiPrefix;
@@ -58,6 +64,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         apiKeyService.updateLastUsed(key);
+
+        auditService.log(null, "API_KEY_USED", Map.of(
+                "appName", key.getAppName(),
+                "keyId", key.getId().toString()));
 
         filterChain.doFilter(request, response);
     }

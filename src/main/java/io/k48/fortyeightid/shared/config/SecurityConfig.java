@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.shared.config;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKeyAuthFilter;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.JwtAuthenticationFilter;
@@ -17,8 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.PermissionsPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -38,6 +39,7 @@ public class SecurityConfig {
     private final ProblemDetailAccessDeniedHandler accessDeniedHandler;
     private final JwtValidationPort jwtValidationPort;
     private final ApiKeyManagementPort apiKeyManagementPort;
+    private final AuditService auditService;
     private final RateLimitConfig rateLimitConfig;
     private final io.github.bucket4j.BucketConfiguration loginRateLimit;
     private final io.github.bucket4j.BucketConfiguration forgotPasswordRateLimit;
@@ -47,6 +49,7 @@ public class SecurityConfig {
                           ProblemDetailAccessDeniedHandler accessDeniedHandler,
                           JwtValidationPort jwtValidationPort,
                           ApiKeyManagementPort apiKeyManagementPort,
+                          AuditService auditService,
                           RateLimitConfig rateLimitConfig,
                           io.github.bucket4j.BucketConfiguration loginRateLimit,
                           io.github.bucket4j.BucketConfiguration forgotPasswordRateLimit,
@@ -55,6 +58,7 @@ public class SecurityConfig {
         this.accessDeniedHandler = accessDeniedHandler;
         this.jwtValidationPort = jwtValidationPort;
         this.apiKeyManagementPort = apiKeyManagementPort;
+        this.auditService = auditService;
         this.rateLimitConfig = rateLimitConfig;
         this.loginRateLimit = loginRateLimit;
         this.forgotPasswordRateLimit = forgotPasswordRateLimit;
@@ -68,7 +72,7 @@ public class SecurityConfig {
 
     @Bean
     public ApiKeyAuthFilter apiKeyAuthFilter() {
-        return new ApiKeyAuthFilter(apiKeyManagementPort);
+        return new ApiKeyAuthFilter(apiKeyManagementPort, auditService);
     }
 
     // Not @Bean — prevents Tomcat from registering these as servlet filters
@@ -90,12 +94,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers(
-                        // SpringDoc — custom swagger-ui.path redirects here
                         "/api/v1/docs",
                         "/api/v1/swagger-ui/**",
-                        // SpringDoc — api-docs path
                         "/api-docs", "/api-docs/**",
-                        // SpringDoc — standard fallback paths
                         "/swagger-ui/**", "/swagger-ui.html",
                         "/v3/api-docs", "/v3/api-docs/**",
                         "/webjars/**"

@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.auth;
 
+import io.k48.fortyeightid.shared.JwtAuthenticationDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,18 +40,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var jwt = jwtValidationPort.validateToken(token);
             var subject = jwt.getSubject();
             var rolesStr = (String) jwt.getClaim("role");
+            var matricule = (String) jwt.getClaim("matricule");
 
             List<SimpleGrantedAuthority> authorities = List.of();
             if (rolesStr != null && !rolesStr.isBlank()) {
                 authorities = Arrays.stream(rolesStr.split(","))
-                        .map(role -> role.trim())
+                        .map(String::trim)
                         .filter(role -> !role.isEmpty())
                         .map(SimpleGrantedAuthority::new)
                         .toList();
             }
 
             var authentication = new UsernamePasswordAuthenticationToken(subject, null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            // Store matricule in details so AuditContextAspect can read it without importing identity
+            authentication.setDetails(new JwtAuthenticationDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request), matricule));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (Exception ex) {
             log.debug("JWT authentication failed: {}", ex.getMessage());
