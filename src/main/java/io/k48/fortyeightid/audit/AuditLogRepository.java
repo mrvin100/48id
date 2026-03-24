@@ -59,4 +59,39 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             ORDER BY a.createdAt DESC
             """)
     java.util.List<AuditLog> findRecentActivity(Pageable pageable);
+
+    // ── Traffic queries ───────────────────────────────────────────────────────
+
+    @Query(value = """
+            SELECT * FROM audit_log
+            WHERE action = 'API_KEY_USED'
+              AND details->>'keyId' = :keyId
+            ORDER BY created_at DESC
+            """, nativeQuery = true)
+    java.util.List<AuditLog> findApiKeyUsageByKeyId(@Param("keyId") String keyId);
+
+    @Query(value = """
+            SELECT * FROM audit_log
+            WHERE action = 'API_KEY_USED'
+              AND details->>'keyId' = :keyId
+            ORDER BY created_at DESC
+            """, nativeQuery = true)
+    Page<AuditLog> findApiKeyUsageByKeyIdPaged(@Param("keyId") String keyId, Pageable pageable);
+
+    @Query("""
+            SELECT a FROM AuditLog a
+            WHERE a.action = 'OPERATOR_ACTION'
+              AND a.userId IN :userIds
+            ORDER BY a.createdAt DESC
+            """)
+    java.util.List<AuditLog> findOperatorActionsByUserIds(@Param("userIds") java.util.Collection<UUID> userIds);
+
+    @Query("""
+            SELECT a FROM AuditLog a
+            WHERE a.action = 'OPERATOR_ACTION'
+              AND a.userId IN :userIds
+            ORDER BY a.createdAt DESC
+            """)
+    Page<AuditLog> findOperatorActionsByUserIdsPaged(
+            @Param("userIds") java.util.Collection<UUID> userIds, Pageable pageable);
 }
