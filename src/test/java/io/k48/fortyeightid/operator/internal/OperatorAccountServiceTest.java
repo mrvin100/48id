@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.identity.UserStatus;
@@ -29,6 +30,7 @@ class OperatorAccountServiceTest {
     @Mock private OperatorAccountRepository accountRepository;
     @Mock private OperatorMembershipRepository membershipRepository;
     @Mock private UserQueryService userQueryService;
+    @Mock private AuditService auditService;
     @InjectMocks private OperatorAccountService service;
 
     private final UUID adminId = UUID.randomUUID();

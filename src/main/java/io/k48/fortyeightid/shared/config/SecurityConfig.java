@@ -5,8 +5,8 @@ import io.k48.fortyeightid.auth.ApiKeyAuthFilter;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.JwtAuthenticationFilter;
 import io.k48.fortyeightid.auth.JwtValidationPort;
+import io.k48.fortyeightid.auth.OperatorActionAuditFilter;
 import java.util.Arrays;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +19,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.PermissionsPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -73,11 +73,13 @@ public class SecurityConfig {
 
     @Bean
     public ApiKeyAuthFilter apiKeyAuthFilter() {
-        return new ApiKeyAuthFilter(apiKeyManagementPort, auditService);
+        return new ApiKeyAuthFilter(apiKeyManagementPort, auditService, apiPrefix);
     }
 
-    // Not @Bean — prevents Tomcat from registering these as servlet filters
-    // independently, which causes GenericFilterBean logger NPE on double-init
+    private OperatorActionAuditFilter operatorActionAuditFilter() {
+        return new OperatorActionAuditFilter(auditService, apiPrefix);
+    }
+
     private RateLimitFilter rateLimitFilter() {
         return new RateLimitFilter(rateLimitConfig, loginRateLimit, forgotPasswordRateLimit, globalIpRateLimit);
     }
@@ -95,12 +97,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers(
-                        // SpringDoc — custom swagger-ui.path redirects here
                         "/api/v1/docs",
                         "/api/v1/swagger-ui/**",
-                        // SpringDoc — api-docs path
                         "/api-docs", "/api-docs/**",
-                        // SpringDoc — standard fallback paths
                         "/swagger-ui/**", "/swagger-ui.html",
                         "/v3/api-docs", "/v3/api-docs/**",
                         "/webjars/**"
@@ -130,7 +129,8 @@ public class SecurityConfig {
             .addFilterBefore(cacheControlFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(apiKeyAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+            .addFilterAfter(apiKeyAuthFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(operatorActionAuditFilter(), ApiKeyAuthFilter.class);
 
         return http.build();
     }

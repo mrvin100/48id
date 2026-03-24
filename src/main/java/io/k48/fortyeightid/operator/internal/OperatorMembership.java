@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -17,7 +18,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "operator_memberships")
+@Table(
+    name = "operator_memberships",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"account_id", "user_id"})
+)
 @Getter
 @Setter
 @NoArgsConstructor

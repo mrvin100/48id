@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.operator.OperatorAccountPort;
 import io.k48.fortyeightid.operator.OperatorAccountPort.CreateOperatorAccountCommand;
 import io.k48.fortyeightid.operator.OperatorAccountPort.OperatorAccountCreated;
@@ -24,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminOperatorAccountControllerTest {
 
     @Mock private OperatorAccountPort operatorAccountPort;
-    @Mock private AuditService auditService;
     @InjectMocks private AdminOperatorAccountController controller;
 
     private final UUID adminId = UUID.randomUUID();
@@ -63,16 +61,6 @@ class AdminOperatorAccountControllerTest {
 
         verify(operatorAccountPort).createAccount(
             eq(new CreateOperatorAccountCommand("48Hub Team", null, adminId)));
-    }
-
-    @Test
-    void createAccount_shouldEmitAuditEvent_whenSuccessful() {
-        var request = new CreateOperatorAccountRequest("48Hub Team", "desc");
-        when(operatorAccountPort.createAccount(any())).thenReturn(sampleCreated());
-
-        controller.createAccount(request, adminId.toString());
-
-        verify(auditService).log(eq(adminId), eq("OPERATOR_ACCOUNT_CREATED"), any());
     }
 
     @Test

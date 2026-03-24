@@ -1,13 +1,12 @@
 package io.k48.fortyeightid.admin.internal;
 
-import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.operator.OperatorAccountPort;
 import io.k48.fortyeightid.operator.OperatorAccountPort.CreateOperatorAccountCommand;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,7 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 class AdminOperatorAccountController {
 
     private final OperatorAccountPort operatorAccountPort;
-    private final AuditService auditService;
+
+    @Value("${fortyeightid.api.prefix}")
+    private String apiPrefix;
 
     @PostMapping
     ResponseEntity<OperatorAccountResponse> createAccount(
@@ -34,14 +35,8 @@ class AdminOperatorAccountController {
         var created = operatorAccountPort.createAccount(
             new CreateOperatorAccountCommand(request.name(), request.description(), adminUuid));
 
-        auditService.log(adminUuid, "OPERATOR_ACCOUNT_CREATED", Map.of(
-            "accountId", created.accountId().toString(),
-            "accountName", created.accountName(),
-            "createdBy", adminUuid.toString()
-        ));
-
         return ResponseEntity
-            .created(URI.create("/api/v1/admin/operator-accounts/" + created.accountId()))
+            .created(URI.create(apiPrefix + "/admin/operator-accounts/" + created.accountId()))
             .body(OperatorAccountResponse.from(created));
     }
 }

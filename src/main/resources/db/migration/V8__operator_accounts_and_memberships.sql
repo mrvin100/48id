@@ -5,7 +5,7 @@ CREATE TABLE operator_accounts (
     name        VARCHAR(100) NOT NULL UNIQUE,                       -- Human-readable name of the client application (e.g. "48Hub Team")
     description VARCHAR(500),                                       -- Optional description of the operator account
     created_by  UUID         REFERENCES users (id) ON DELETE SET NULL, -- Admin who created this account
-    owned_api_key_id UUID,                                          -- Reference to the API key owned by this account (nullable, set after creation)
+    owned_api_key_id UUID    REFERENCES api_keys (id) ON DELETE SET NULL, -- Reference to the API key owned by this account (nullable, set after creation)
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),                -- Timestamp when the account was created
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now()                 -- Timestamp of last update
 );

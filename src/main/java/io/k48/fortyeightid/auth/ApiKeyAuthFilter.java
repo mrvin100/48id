@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
@@ -21,13 +18,12 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private final ApiKeyManagementPort apiKeyService;
     private final AuditService auditService;
+    private final String apiPrefix;
 
-    @Value("${fortyeightid.api.prefix:/api/v1}")
-    private String apiPrefix;
-
-    public ApiKeyAuthFilter(ApiKeyManagementPort apiKeyService, @Lazy AuditService auditService) {
+    public ApiKeyAuthFilter(ApiKeyManagementPort apiKeyService, AuditService auditService, String apiPrefix) {
         this.apiKeyService = apiKeyService;
         this.auditService = auditService;
+        this.apiPrefix = apiPrefix;
     }
 
     @Override
@@ -43,27 +39,27 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         var apiKey = request.getHeader(API_KEY_HEADER);
         if (apiKey == null || apiKey.isBlank()) {
-            writeForbidden(response, "Missing X-API-Key header", "Requires X-API-Key header. Contact K48 admin to obtain an API key.");
+            writeForbidden(response, "Missing X-API-Key header");
             return;
         }
 
         var validKey = apiKeyService.validate(apiKey);
         if (validKey.isEmpty()) {
             log.debug("Invalid API key presented");
-            writeForbidden(response, "Invalid X-API-Key header", "The supplied API key is invalid or inactive.");
+            writeForbidden(response, "Invalid X-API-Key header");
             return;
         }
 
         var key = validKey.get();
         var authentication = new ApiKeyAuthentication(key.getId(), key.getAppName());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);
         apiKeyService.updateLastUsed(key);
 
         try {
@@ -75,9 +71,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void writeForbidden(HttpServletResponse response, String error, String message) throws IOException {
+    private void writeForbidden(HttpServletResponse response, String error) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}");
+        response.getWriter().write("{\"error\":\"" + error.replace("\"", "\\\"") + "\"}");
     }
 }

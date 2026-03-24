@@ -14,23 +14,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ApiKeyAuthFilterTest {
 
     @Mock private ApiKeyManagementPort apiKeyService;
     @Mock private AuditService auditService;
-    @InjectMocks private ApiKeyAuthFilter apiKeyAuthFilter;
+
+    private ApiKeyAuthFilter apiKeyAuthFilter;
+
+    @BeforeEach
+    void setUp() {
+        apiKeyAuthFilter = new ApiKeyAuthFilter(apiKeyService, auditService, "/api/v1");
+    }
 
     @AfterEach
     void tearDown() {
@@ -39,8 +44,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void validApiKeySetsAuthenticationForProtectedEndpoint() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var request = new MockHttpServletRequest("POST", "/api/v1/auth/verify-token");
         request.addHeader("X-API-Key", "valid-key");
         var response = new MockHttpServletResponse();
@@ -65,8 +68,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void missingHeaderReturnsForbiddenForProtectedEndpoint() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var request = new MockHttpServletRequest("POST", "/api/v1/auth/verify-token");
         var response = new MockHttpServletResponse();
         var chain = new MockFilterChain();
@@ -80,8 +81,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void invalidKeyReturnsForbiddenForProtectedEndpoint() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var request = new MockHttpServletRequest("GET", "/api/v1/users/abc/exists");
         request.addHeader("X-API-Key", "bad-key");
         var response = new MockHttpServletResponse();
@@ -98,7 +97,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void shouldNotFilterPublicEndpoint() {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
         var request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
         assertThat(apiKeyAuthFilter.shouldNotFilter(request)).isTrue();
     }
@@ -107,8 +105,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void doFilterInternal_shouldEmitApiKeyUsedAuditEvent_whenValidKey() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var keyId = UUID.randomUUID();
         var apiKey = ApiKey.builder().id(keyId).appName("48Hub").keyHash("hash").active(true).build();
         when(apiKeyService.validate("valid-key")).thenReturn(Optional.of(apiKey));
@@ -127,8 +123,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void doFilterInternal_shouldNotEmitAuditEvent_whenInvalidKey() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         when(apiKeyService.validate("bad-key")).thenReturn(Optional.empty());
 
         var request = new MockHttpServletRequest("POST", "/api/v1/auth/verify-token");
@@ -141,8 +135,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void doFilterInternal_shouldContinueRequest_whenAuditWriteFails() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var keyId = UUID.randomUUID();
         var apiKey = ApiKey.builder().id(keyId).appName("48Hub").keyHash("hash").active(true).build();
         when(apiKeyService.validate("valid-key")).thenReturn(Optional.of(apiKey));
@@ -153,7 +145,6 @@ class ApiKeyAuthFilterTest {
         var response = new MockHttpServletResponse();
         var chain = new MockFilterChain();
 
-        // Must not throw — request continues normally
         apiKeyAuthFilter.doFilterInternal(request, response, chain);
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -162,8 +153,6 @@ class ApiKeyAuthFilterTest {
 
     @Test
     void doFilterInternal_shouldEmitAuditAfterUpdateLastUsed_whenValidKey() throws Exception {
-        ReflectionTestUtils.setField(apiKeyAuthFilter, "apiPrefix", "/api/v1");
-
         var keyId = UUID.randomUUID();
         var apiKey = ApiKey.builder().id(keyId).appName("48Hub").keyHash("hash").active(true).build();
         when(apiKeyService.validate("valid-key")).thenReturn(Optional.of(apiKey));
