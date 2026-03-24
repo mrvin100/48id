@@ -5,8 +5,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.admin.DashboardQueryPort;
-import io.k48.fortyeightid.admin.DashboardQueryPort.DashboardSnapshot;
+import io.k48.fortyeightid.shared.DashboardQueryPort;
+import io.k48.fortyeightid.shared.DashboardQueryPort.DashboardSnapshot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

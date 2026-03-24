@@ -1,6 +1,6 @@
 package io.k48.fortyeightid.operator.internal;
 
-import io.k48.fortyeightid.admin.DashboardQueryPort;
+import io.k48.fortyeightid.shared.DashboardQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

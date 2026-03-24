@@ -1,6 +1,6 @@
 package io.k48.fortyeightid.operator.internal;
 
-import io.k48.fortyeightid.admin.DashboardQueryPort;
+import io.k48.fortyeightid.shared.DashboardQueryPort;
 import io.k48.fortyeightid.identity.UserStatus;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

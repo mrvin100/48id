@@ -1,7 +1,8 @@
-package io.k48.fortyeightid.admin;
+package io.k48.fortyeightid.shared;
 
-import io.k48.fortyeightid.identity.UserStatus;
 import io.k48.fortyeightid.identity.User;
+import io.k48.fortyeightid.identity.UserStatus;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -15,7 +16,7 @@ public interface DashboardQueryPort {
 
     Page<User> listUsers(UserStatus status, String batch, String role, Pageable pageable);
 
-    User getUser(java.util.UUID userId);
+    User getUser(UUID userId);
 
     /**
      * Immutable snapshot of dashboard metrics — safe to cross module boundaries.

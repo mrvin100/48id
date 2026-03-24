@@ -42,12 +42,12 @@ class BootstrapServiceTest {
     @Test
     void createFirstAdmin_successfullyCreatesAdmin() {
         var request = new BootstrapRequest(
-                "K48-B1-1",
+                "K48-2024-001",
                 "admin@k48.io",
                 "Admin User",
                 "SecurePass123",
                 "+237600000001",
-                "B1",
+                "2024",
                 "Computer Science"
         );
 
@@ -81,7 +81,7 @@ class BootstrapServiceTest {
     @Test
     void createFirstAdmin_throwsWhenAdminAlreadyExists() {
         var request = new BootstrapRequest(
-                "K48-B1-1",
+                "K48-2024-001",
                 "admin@k48.io",
                 "Admin User",
                 "SecurePass123",
@@ -104,7 +104,7 @@ class BootstrapServiceTest {
     @Test
     void createFirstAdmin_throwsWhenMatriculeExists() {
         var request = new BootstrapRequest(
-                "K48-B1-1",
+                "K48-2024-001",
                 "admin@k48.io",
                 "Admin User",
                 "SecurePass123",
@@ -128,7 +128,7 @@ class BootstrapServiceTest {
     @Test
     void createFirstAdmin_throwsWhenEmailExists() {
         var request = new BootstrapRequest(
-                "K48-B1-1",
+                "K48-2024-001",
                 "admin@k48.io",
                 "Admin User",
                 "SecurePass123",
