@@ -22,6 +22,7 @@ import org.springframework.util.StreamUtils;
 class EmailService implements EmailPort {
 
     private static final String ACTIVATION_EMAIL_TEMPLATE = "templates/activation-email.html";
+    private static final String OPERATOR_INVITE_EMAIL_TEMPLATE = "templates/operator-invite-email.html";
 
     private final JavaMailSender mailSender;
 
@@ -37,21 +38,27 @@ class EmailService implements EmailPort {
     @Value("${fortyeightid.mail.login-url:http://localhost:3000/login}")
     private String loginUrl;
 
+    @Value("${fortyeightid.mail.operator-invite-url:http://localhost:3000/accept-operator-invite}")
+    private String operatorInviteBaseUrl;
+
     @Override
     @Async
     public void sendActivationEmail(String toEmail, String userName, String matricule, String temporaryPassword, String activationToken) {
         try {
-            String htmlContent = loadAndProcessTemplate(
-                    ACTIVATION_EMAIL_TEMPLATE, userName, matricule, temporaryPassword, activationToken);
+            String htmlContent = loadTemplate(ACTIVATION_EMAIL_TEMPLATE)
+                    .replace("{{userName}}", escapeHtml(userName))
+                    .replace("{{matricule}}", escapeHtml(matricule))
+                    .replace("{{temporaryPassword}}", escapeHtml(temporaryPassword))
+                    .replace("{{loginUrl}}", escapeHtml(loginUrl))
+                    .replace("{{activationUrl}}", escapeHtml(activationBaseUrl + "?token=" + activationToken));
 
-            MimeMessagePreparator messagePreparator = mimeMessage -> {
-                mimeMessage.setFrom(new InternetAddress(fromAddress));
-                mimeMessage.setRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(toEmail));
-                mimeMessage.setSubject("K48 ID — Activate your account");
-                mimeMessage.setText(htmlContent, StandardCharsets.UTF_8.name(), "html");
+            MimeMessagePreparator preparator = msg -> {
+                msg.setFrom(new InternetAddress(fromAddress));
+                msg.setRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(toEmail));
+                msg.setSubject("K48 ID — Activate your account");
+                msg.setText(htmlContent, StandardCharsets.UTF_8.name(), "html");
             };
-
-            mailSender.send(messagePreparator);
+            mailSender.send(preparator);
             log.info("Activation email sent to {}", toEmail);
         } catch (MailException ex) {
             log.error("Failed to send activation email to {}: {}", toEmail, ex.getMessage(), ex);
@@ -88,23 +95,36 @@ class EmailService implements EmailPort {
         }
     }
 
-    private String loadAndProcessTemplate(String templatePath, String userName, String matricule,
-                                          String temporaryPassword, String activationToken) throws IOException {
-        var resource = new ClassPathResource(templatePath);
-        String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+    @Override
+    @Async
+    public void sendOperatorInviteEmail(String toEmail, String userName, String inviteToken) {
+        try {
+            String htmlContent = loadTemplate(OPERATOR_INVITE_EMAIL_TEMPLATE)
+                    .replace("{{userName}}", escapeHtml(userName))
+                    .replace("{{inviteUrl}}", escapeHtml(operatorInviteBaseUrl + "?token=" + inviteToken));
 
-        return template
-                .replace("{{userName}}", escapeHtml(userName))
-                .replace("{{matricule}}", escapeHtml(matricule))
-                .replace("{{temporaryPassword}}", escapeHtml(temporaryPassword))
-                .replace("{{loginUrl}}", escapeHtml(loginUrl))
-                .replace("{{activationUrl}}", escapeHtml(activationBaseUrl + "?token=" + activationToken));
+            MimeMessagePreparator preparator = msg -> {
+                msg.setFrom(new InternetAddress(fromAddress));
+                msg.setRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(toEmail));
+                msg.setSubject("K48 ID — You have been invited as an Operator");
+                msg.setText(htmlContent, StandardCharsets.UTF_8.name(), "html");
+            };
+            mailSender.send(preparator);
+            log.info("Operator invite email sent to {}", toEmail);
+        } catch (MailException ex) {
+            log.error("Failed to send operator invite email to {}: {}", toEmail, ex.getMessage(), ex);
+        } catch (IOException ex) {
+            log.error("Failed to load operator invite email template: {}", ex.getMessage(), ex);
+        }
+    }
+
+    private String loadTemplate(String path) throws IOException {
+        var resource = new ClassPathResource(path);
+        return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
 
     private String escapeHtml(String input) {
-        if (input == null) {
-            return "";
-        }
+        if (input == null) return "";
         return input
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")

@@ -107,6 +107,7 @@ public class SecurityConfig {
                         apiPrefix + "/auth/forgot-password",
                         apiPrefix + "/auth/reset-password",
                         apiPrefix + "/auth/activate-account",
+                        apiPrefix + "/auth/accept-operator-invite",
                         apiPrefix + "/auth/bootstrap",
                         apiPrefix + "/auth/bootstrap/available"
                 ).permitAll()

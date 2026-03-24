@@ -241,6 +241,29 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+
+    @ExceptionHandler(OperatorAccountNotFoundException.class)
+    ProblemDetail handleOperatorAccountNotFound(OperatorAccountNotFoundException ex) {
+        log.error("Operator account not found", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Operator Account Not Found");
+        problem.setType(URI.create("https://48id.k48.io/errors/operator-account-not-found"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "OPERATOR_ACCOUNT_NOT_FOUND");
+        return problem;
+    }
+
+    @ExceptionHandler(OperatorOwnershipRequiredException.class)
+    ProblemDetail handleOperatorOwnershipRequired(OperatorOwnershipRequiredException ex) {
+        log.error("Operator ownership required", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Ownership Required");
+        problem.setType(URI.create("https://48id.k48.io/errors/operator-ownership-required"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "OPERATOR_OWNERSHIP_REQUIRED");
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
