@@ -21,6 +21,7 @@ graph TB
             Identity[identity<br/>User Management]
             Provisioning[provisioning<br/>CSV Import]
             AdminMod[admin<br/>Admin Operations]
+            Operator[operator<br/>Operator Read-Only]
             Audit[audit<br/>Audit Logging]
         end
         
@@ -82,9 +83,13 @@ io.k48.fortyeightid/
 ├── audit/                   # Audit logging module
 │   ├── internal/
 │   └── package-info.java
-└── shared/                  # Shared infrastructure
+├── operator/                # Operator read-only facade module (Sprint 4)
+│   ├── internal/
+│   └── package-info.java
+└── shared/                  # Shared infrastructure (Type.OPEN — accessible by all modules)
     ├── config/
     ├── exception/
+    ├── MatriculeValidator.java   # Matricule format + batch prefix validation (Sprint 4)
     └── package-info.java
 ```
 
@@ -94,10 +99,11 @@ io.k48.fortyeightid/
 |--------|----------------|-------------------|
 | **auth** | Authentication, JWT, password flows, activation, API keys | `PasswordResetPort`, `EmailPort`, `ApiKeyManagementPort` |
 | **identity** | User entity, profiles, roles, status management | `UserQueryService`, `UserProvisioningPort`, `UserRoleService` |
-| **admin** | Privileged user operations, API key admin, audit access | Admin controllers |
+| **admin** | Privileged user operations, API key admin, audit access | `DashboardQueryPort`, Admin controllers |
 | **provisioning** | CSV import, bulk user creation with activation | Provisioning controllers |
 | **audit** | Audit event persistence and querying | `AuditService` |
-| **shared** | Security config, rate limiting, error handling | Global exception handler, security filters |
+| **operator** | Read-only facade for OPERATOR-role users: metrics, audit log, user list | Operator controllers |
+| **shared** | Security config, rate limiting, error handling, cross-cutting validators | `MatriculeValidator`, Global exception handler, security filters |
 
 ### Module Communication
 
@@ -111,6 +117,9 @@ graph LR
     Admin -->|ApiKeyManagementPort| Auth
     Auth -->|UserQueryService| Identity
     Auth -->|AuditService| Audit[audit]
+    Operator[operator] -->|DashboardQueryPort| Admin
+    Operator -->|UserQueryService| Identity
+    Operator -->|AuditService| Audit
 ```
 
 **Rules:**
@@ -249,7 +258,8 @@ src/main/resources/db/migration/
 ├── V4__add_requires_password_change_column.sql
 ├── V5__add_created_by_to_api_keys.sql
 ├── V6__add_user_agent_to_audit_log.sql
-└── V7__add_purpose_to_password_reset_tokens.sql
+├── V7__add_purpose_to_password_reset_tokens.sql
+└── V8__add_operator_role.sql                        # Seeds OPERATOR role (Sprint 4)
 ```
 
 Migrations run automatically on application startup.
@@ -404,6 +414,49 @@ The architecture is validated by different test layers:
 | **Contract Tests** | API contracts | Spring MockMvc |
 
 **Key test:** `ApplicationModularityTests` enforces that module boundaries are respected.
+
+## Matricule Validation
+
+Every user creation path enforces the matricule format rule via `MatriculeValidator` (in `shared/`).
+
+### Format rule
+
+```
+^K48-B[0-9]+-[0-9]+$
+```
+
+Valid examples: `K48-B1-1`, `K48-B2-12`, `K48-B10-999`
+
+### Batch prefix consistency
+
+The batch embedded in the matricule must match the user's declared `batch` field:
+
+| matricule | batch | result |
+|-----------|-------|--------|
+| `K48-B1-12` | `B1` | ✅ valid |
+| `K48-B2-5` | `B1` | ❌ `"Matricule prefix 'K48-B2' does not match batch 'B1'"` |
+| `K48-2024-001` | any | ❌ `"does not match required format K48-B{n}-{seq}"` |
+
+### Where validation runs
+
+Validation fires as the **first step** in both user creation paths, before any database check:
+
+- `UserProvisioningService.createUser()` — standard user creation
+- `BootstrapService.createFirstAdmin()` — first admin bootstrap
+
+### Error response (RFC 9457)
+
+```json
+{
+  "status": 400,
+  "title": "Invalid Matricule Format",
+  "detail": "Matricule prefix 'K48-B2' does not match batch 'B1'",
+  "type": "https://48id.k48.io/errors/invalid-matricule-format",
+  "code": "INVALID_MATRICULE_FORMAT"
+}
+```
+
+The `code` field is stable and used by the frontend for localized error display.
 
 ## Next Steps
 
