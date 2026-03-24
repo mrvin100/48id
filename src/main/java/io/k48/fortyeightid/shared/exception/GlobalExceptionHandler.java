@@ -230,6 +230,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(OperatorAccountNameTakenException.class)
+    ProblemDetail handleOperatorAccountNameTaken(OperatorAccountNameTakenException ex) {
+        log.error("Operator account name taken", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Operator Account Name Taken");
+        problem.setType(URI.create("https://48id.k48.io/errors/operator-account-name-taken"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "OPERATOR_ACCOUNT_NAME_TAKEN");
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);

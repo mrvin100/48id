@@ -1,8 +1,8 @@
 package io.k48.fortyeightid.operator.internal;
 
+import io.k48.fortyeightid.operator.OperatorInvitePort;
 import io.k48.fortyeightid.operator.internal.OperatorMembership.MemberRole;
 import io.k48.fortyeightid.operator.internal.OperatorMembership.MembershipStatus;
-import io.k48.fortyeightid.operator.ports.OperatorInvitePort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

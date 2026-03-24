@@ -1,4 +1,4 @@
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = {"shared"}
+    allowedDependencies = {"shared", "identity"}
 )
 package io.k48.fortyeightid.operator;
