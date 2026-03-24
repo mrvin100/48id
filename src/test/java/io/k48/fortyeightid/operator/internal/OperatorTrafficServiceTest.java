@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.k48.fortyeightid.audit.AuditLog;
 import io.k48.fortyeightid.audit.AuditLogRepository;
 import io.k48.fortyeightid.identity.UserQueryService;

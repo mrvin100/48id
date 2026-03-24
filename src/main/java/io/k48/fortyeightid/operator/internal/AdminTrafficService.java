@@ -1,9 +1,8 @@
 package io.k48.fortyeightid.operator.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.k48.fortyeightid.admin.TrafficQueryPort;
-import io.k48.fortyeightid.audit.AuditLog;
 import io.k48.fortyeightid.audit.AuditLogRepository;
+import io.k48.fortyeightid.audit.AuditLogUtils;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.shared.exception.OperatorAccountNotFoundException;
 import java.time.Instant;
@@ -13,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,6 @@ class AdminTrafficService implements TrafficQueryPort {
     private final OperatorMembershipRepository operatorMembershipRepository;
     private final AuditLogRepository auditLogRepository;
     private final UserQueryService userQueryService;
-    private final ObjectMapper objectMapper;
 
     // ── BE-11: aggregated traffic per account ─────────────────────────────────
 
@@ -74,13 +73,13 @@ class AdminTrafficService implements TrafficQueryPort {
         var account = operatorAccountRepository.findById(accountId)
                 .orElseThrow(() -> new OperatorAccountNotFoundException("Operator account not found: " + accountId));
 
-        List<ApiKeyCall> apiKeyCalls = List.of();
+        Page<ApiKeyCall> apiKeyCalls = Page.empty(pageable);
         if (account.getOwnedApiKeyId() != null) {
             apiKeyCalls = auditLogRepository
                     .findApiKeyUsageByKeyIdPaged(account.getOwnedApiKeyId().toString(), pageable)
                     .map(a -> new ApiKeyCall(a.getCreatedAt(), a.getIpAddress(),
-                            extractField(a, "endpoint"), extractField(a, "method")))
-                    .getContent();
+                            AuditLogUtils.extractField(a, "endpoint"),
+                            AuditLogUtils.extractField(a, "method")));
         }
 
         var memberIds = operatorMembershipRepository.findAllByOperatorAccountId(accountId)
@@ -90,26 +89,15 @@ class AdminTrafficService implements TrafficQueryPort {
                 Function.identity(),
                 id -> userQueryService.findById(id).map(u -> u.getMatricule()).orElse("unknown")));
 
-        List<MemberAction> memberActions = List.of();
+        Page<MemberAction> memberActions = Page.empty(pageable);
         if (!memberIds.isEmpty()) {
             memberActions = auditLogRepository
                     .findOperatorActionsByUserIdsPaged(memberIds, pageable)
                     .map(a -> new MemberAction(a.getUserId(),
                             matriculeByUserId.getOrDefault(a.getUserId(), "unknown"),
-                            a.getAction(), extractField(a, "endpoint"), a.getCreatedAt()))
-                    .getContent();
+                            a.getAction(), AuditLogUtils.extractField(a, "endpoint"), a.getCreatedAt()));
         }
 
         return new AccountTrafficView(account.getId(), account.getName(), apiKeyCalls, memberActions);
-    }
-
-    private String extractField(AuditLog log, String field) {
-        try {
-            var node = objectMapper.readTree(log.getDetails());
-            var value = node.get(field);
-            return value != null ? value.asText() : null;
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

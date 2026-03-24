@@ -3,6 +3,7 @@ package io.k48.fortyeightid.admin;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -28,7 +29,7 @@ public interface TrafficQueryPort {
     // ── Detail view (BE-12) ───────────────────────────────────────────────────
 
     record AccountTrafficView(UUID accountId, String accountName,
-                              List<ApiKeyCall> apiKeyCalls, List<MemberAction> memberActions) {}
+                              Page<ApiKeyCall> apiKeyCalls, Page<MemberAction> memberActions) {}
 
     record ApiKeyCall(Instant timestamp, String ip, String endpoint, String method) {}
 

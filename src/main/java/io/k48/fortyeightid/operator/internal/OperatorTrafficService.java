@@ -1,13 +1,13 @@
 package io.k48.fortyeightid.operator.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.k48.fortyeightid.audit.AuditLog;
 import io.k48.fortyeightid.audit.AuditLogRepository;
+import io.k48.fortyeightid.audit.AuditLogUtils;
 import io.k48.fortyeightid.identity.UserQueryService;
 import io.k48.fortyeightid.shared.exception.OperatorAccountNotFoundException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,35 +25,38 @@ class OperatorTrafficService {
     private final OperatorMembershipRepository operatorMembershipRepository;
     private final AuditLogRepository auditLogRepository;
     private final UserQueryService userQueryService;
-    private final ObjectMapper objectMapper;
 
     OperatorTrafficResponse getTrafficForOperator(UUID userId) {
-        // Resolve account via membership
-        var membership = operatorMembershipRepository
-                .findByOperatorAccountIdAndUserIdAndStatus(null, userId, OperatorMemberStatus.ACTIVE)
-                .or(() -> operatorMembershipRepository.findAllByUserId(userId).stream()
-                        .filter(m -> m.getStatus() == OperatorMemberStatus.ACTIVE)
-                        .findFirst())
-                .orElseThrow(() -> new AccessDeniedException("User is not an active member of any operator account"));
+        var membership = operatorMembershipRepository.findAllByUserId(userId).stream()
+                .filter(m -> m.getStatus() == OperatorMemberStatus.ACTIVE)
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User is not an active member of any operator account"));
 
         var account = operatorAccountRepository.findById(membership.getOperatorAccountId())
                 .orElseThrow(() -> new OperatorAccountNotFoundException(
                         "Operator account not found: " + membership.getOperatorAccountId()));
 
-        // API key calls
+        // API key calls — pre-compute hour-bucket counts in a single pass
         List<OperatorTrafficResponse.ApiKeyCall> apiKeyCalls = List.of();
         if (account.getOwnedApiKeyId() != null) {
             var rawCalls = auditLogRepository.findApiKeyUsageByKeyId(account.getOwnedApiKeyId().toString());
-            apiKeyCalls = rawCalls.stream().map(a -> {
-                long totalInWindow = countInSameHourBucket(rawCalls, a.getCreatedAt());
-                return new OperatorTrafficResponse.ApiKeyCall(
-                        a.getCreatedAt(), a.getIpAddress(),
-                        extractField(a, "endpoint"), extractField(a, "method"),
-                        totalInWindow);
-            }).toList();
+
+            // Single pass: group by truncated hour → count
+            Map<Instant, Long> countByHour = rawCalls.stream()
+                    .collect(Collectors.groupingBy(
+                            a -> a.getCreatedAt().truncatedTo(ChronoUnit.HOURS),
+                            Collectors.counting()));
+
+            apiKeyCalls = rawCalls.stream().map(a -> new OperatorTrafficResponse.ApiKeyCall(
+                    a.getCreatedAt(), a.getIpAddress(),
+                    AuditLogUtils.extractField(a, "endpoint"),
+                    AuditLogUtils.extractField(a, "method"),
+                    countByHour.getOrDefault(a.getCreatedAt().truncatedTo(ChronoUnit.HOURS), 0L)))
+                    .toList();
         }
 
-        // Member actions — all members of this account
+        // Member actions
         var memberIds = operatorMembershipRepository.findAllByOperatorAccountId(account.getId())
                 .stream().map(OperatorMembership::getUserId).toList();
 
@@ -67,29 +70,10 @@ class OperatorTrafficService {
                     .map(a -> new OperatorTrafficResponse.MemberAction(
                             a.getUserId(),
                             matriculeByUserId.getOrDefault(a.getUserId(), "unknown"),
-                            a.getAction(), extractField(a, "endpoint"), a.getCreatedAt()))
+                            a.getAction(), AuditLogUtils.extractField(a, "endpoint"), a.getCreatedAt()))
                     .toList();
         }
 
         return new OperatorTrafficResponse(apiKeyCalls, memberActions, Instant.now());
-    }
-
-    /** Count events in the same 1-hour bucket as the given timestamp. */
-    private long countInSameHourBucket(List<AuditLog> calls, Instant timestamp) {
-        var bucketStart = timestamp.truncatedTo(ChronoUnit.HOURS);
-        var bucketEnd = bucketStart.plus(1, ChronoUnit.HOURS);
-        return calls.stream()
-                .filter(a -> !a.getCreatedAt().isBefore(bucketStart) && a.getCreatedAt().isBefore(bucketEnd))
-                .count();
-    }
-
-    private String extractField(AuditLog log, String field) {
-        try {
-            var node = objectMapper.readTree(log.getDetails());
-            var value = node.get(field);
-            return value != null ? value.asText() : null;
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

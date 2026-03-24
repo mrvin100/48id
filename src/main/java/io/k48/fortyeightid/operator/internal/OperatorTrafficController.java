@@ -8,6 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("${fortyeightid.api.prefix}/operator/traffic")
@@ -19,6 +21,12 @@ class OperatorTrafficController {
 
     @GetMapping
     ResponseEntity<OperatorTrafficResponse> getTraffic(@AuthenticationPrincipal String userId) {
-        return ResponseEntity.ok(operatorTrafficService.getTrafficForOperator(UUID.fromString(userId)));
+        UUID id;
+        try {
+            id = UUID.fromString(userId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user identity in token");
+        }
+        return ResponseEntity.ok(operatorTrafficService.getTrafficForOperator(id));
     }
 }
