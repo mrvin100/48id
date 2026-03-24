@@ -1,5 +1,7 @@
 package io.k48.fortyeightid.auth.internal;
 
+import io.k48.fortyeightid.shared.MatriculeValidator;
+import io.k48.fortyeightid.shared.exception.InvalidMatriculeFormatException;
 import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.RoleQueryService;
 import io.k48.fortyeightid.identity.User;
@@ -50,6 +52,10 @@ class BootstrapService {
             log.warn("Bootstrap attempt rejected - {} admin users already exist", adminCount);
             throw new IllegalStateException("Cannot create admin user - admin users already exist in the system");
         }
+
+        // Validate matricule format
+        MatriculeValidator.validate(request.matricule(), request.batch())
+                .ifPresent(error -> { throw new InvalidMatriculeFormatException(error); });
 
         // Validate uniqueness
         if (userQueryService.existsByMatricule(request.matricule())) {
