@@ -11,7 +11,8 @@ interface OperatorMembershipRepository extends JpaRepository<OperatorMembership,
 
     Optional<OperatorMembership> findByOperatorAccountIdAndUserId(UUID operatorAccountId, UUID userId);
 
-    Optional<OperatorMembership> findByUserIdAndStatus(UUID userId, OperatorMemberStatus status);
+    Optional<OperatorMembership> findByOperatorAccountIdAndUserIdAndStatus(
+            UUID operatorAccountId, UUID userId, OperatorMemberStatus status);
 
     void deleteByOperatorAccountIdAndUserId(UUID operatorAccountId, UUID userId);
 }

@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -75,10 +77,24 @@ class OperatorAccountService {
                 .build());
 
         var rawToken = operatorInviteTokenService.createInviteToken(targetUserId, INVITE_TOKEN_TTL_SECONDS);
-        emailPort.sendOperatorInviteEmail(user.getEmail(), user.getName(), rawToken);
+
+        // Send email only after the transaction commits — avoids email on rollback
+        final String toEmail = user.getEmail();
+        final String userName = user.getName();
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailPort.sendOperatorInviteEmail(toEmail, userName, rawToken);
+                }
+            });
+        } else {
+            emailPort.sendOperatorInviteEmail(toEmail, userName, rawToken);
+        }
+
         auditService.log(adminId, "OPERATOR_MEMBER_INVITED",
                 Map.of("accountId", accountId.toString(), "targetUser", targetUserId.toString(), "role", role));
-        log.info("Operator invite sent to user {} for account {}", targetUserId, accountId);
+        log.info("Operator invite queued for user {} on account {}", targetUserId, accountId);
     }
 
     @Transactional
@@ -135,12 +151,14 @@ class OperatorAccountService {
     // ── Invite acceptance ─────────────────────────────────────────────────────
 
     @Transactional
-    void acceptInvite(UUID userId) {
-        var membership = operatorMembershipRepository.findByUserIdAndStatus(userId, OperatorMemberStatus.PENDING)
-                .orElseThrow(() -> new OperatorAccountNotFoundException("No pending invite found for user: " + userId));
+    void acceptInvite(UUID userId, UUID accountId) {
+        var membership = operatorMembershipRepository
+                .findByOperatorAccountIdAndUserIdAndStatus(accountId, userId, OperatorMemberStatus.PENDING)
+                .orElseThrow(() -> new OperatorAccountNotFoundException(
+                        "No pending invite found for user " + userId + " on account " + accountId));
         membership.setStatus(OperatorMemberStatus.ACTIVE);
         operatorMembershipRepository.save(membership);
-        log.info("Operator invite accepted by user {}", userId);
+        log.info("Operator invite accepted by user {} for account {}", userId, accountId);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -153,12 +171,16 @@ class OperatorAccountService {
     private void requireOwner(UUID accountId, UUID userId) {
         var m = operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, userId)
                 .orElseThrow(() -> new OperatorOwnershipRequiredException("You are not a member of this operator account"));
+        if (m.getStatus() != OperatorMemberStatus.ACTIVE)
+            throw new OperatorOwnershipRequiredException("Membership is not active");
         if (m.getMemberRole() != OperatorMemberRole.OWNER)
             throw new OperatorOwnershipRequiredException("Only the OWNER can perform this action");
     }
 
     private void requireMember(UUID accountId, UUID userId) {
-        operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, userId)
+        var m = operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, userId)
                 .orElseThrow(() -> new OperatorOwnershipRequiredException("You are not a member of this operator account"));
+        if (m.getStatus() != OperatorMemberStatus.ACTIVE)
+            throw new OperatorOwnershipRequiredException("Membership is not active");
     }
 }

@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Delegates invite token creation/validation to the auth module via port.
+ * Delegates invite token creation to the auth module via port.
  */
 @Service
 @RequiredArgsConstructor

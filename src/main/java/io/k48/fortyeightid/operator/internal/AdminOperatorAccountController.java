@@ -60,7 +60,7 @@ class AdminOperatorAccountController {
     ResponseEntity<Void> inviteMember(@PathVariable UUID id,
                                       @Valid @RequestBody InviteRequest request,
                                       @AuthenticationPrincipal String adminId) {
-        operatorAccountService.inviteMember(id, request.userId(), request.role(), UUID.fromString(adminId));
+        operatorAccountService.inviteMember(id, request.userId(), request.role().name(), UUID.fromString(adminId));
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -73,7 +73,7 @@ class AdminOperatorAccountController {
 
     record CreateAccountRequest(@NotBlank @Size(max = 100) String name, @Size(max = 500) String description) {}
 
-    record InviteRequest(@NotNull UUID userId, @NotBlank String role) {}
+    record InviteRequest(@NotNull UUID userId, @NotNull OperatorMemberRole role) {}
 
     record AccountResponse(UUID id, String name, String description, UUID ownedApiKeyId, Instant createdAt) {
         static AccountResponse from(OperatorAccount a) {

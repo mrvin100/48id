@@ -18,6 +18,9 @@ class OperatorInviteTokenServiceImpl implements OperatorInviteTokenPort {
     @Override
     @Transactional
     public String createInviteToken(UUID userId, long ttlSeconds) {
+        if (ttlSeconds <= 0) {
+            throw new IllegalArgumentException("ttlSeconds must be positive, got: " + ttlSeconds);
+        }
         passwordResetTokenRepository.deleteAllByUserIdAndPurpose(userId, ResetTokenPurpose.OPERATOR_INVITE);
         var rawToken = UUID.randomUUID().toString();
         var token = PasswordResetToken.builder()

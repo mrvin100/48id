@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You have been invited as an Operator</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f8fa; color: #172b4d; margin: 0; padding: 24px; }
+        .card { max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #dfe1e6; border-radius: 12px; overflow: hidden; }
+        .header { background: #1d4ed8; color: #ffffff; padding: 24px; }
+        .content { padding: 24px; line-height: 1.6; }
+        .button { display: inline-block; background: #1d4ed8; color: #ffffff !important; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 600; }
+        .muted { color: #5e6c84; font-size: 14px; }
+        .footer { padding: 0 24px 24px; color: #5e6c84; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <h1 style="margin:0;">Operator Invitation</h1>
+        <p style="margin:8px 0 0;">You have been invited to join an Operator account on K48 ID.</p>
+    </div>
+    <div class="content">
+        <p>Hello {{userName}},</p>
+        <p>An administrator has invited you to join an Operator account on K48 ID. Click the button below to accept your invitation (valid for 24 hours):</p>
+        <p><a class="button" href="{{inviteUrl}}">Accept invitation</a></p>
+        <p class="muted">If the button does not work, copy and paste this link into your browser:<br>{{inviteUrl}}</p>
+        <p class="muted">If you did not expect this invitation, please contact K48 administration.</p>
+    </div>
+    <div class="footer">
+        This is an automated security email from K48 ID.
+    </div>
+</div>
+</body>
+</html>

@@ -75,7 +75,7 @@ class AdminOperatorAccountControllerTest {
     void inviteMember_returns201() {
         var accountId = UUID.randomUUID();
         var adminId = UUID.randomUUID();
-        var request = new AdminOperatorAccountController.InviteRequest(UUID.randomUUID(), "OWNER");
+        var request = new AdminOperatorAccountController.InviteRequest(UUID.randomUUID(), OperatorMemberRole.OWNER);
 
         var response = controller.inviteMember(accountId, request, adminId.toString());
 
@@ -100,7 +100,7 @@ class AdminOperatorAccountControllerTest {
     }
 
     private OperatorMembership buildMembership(UUID userId, OperatorMemberRole role, OperatorMemberStatus status) {
-        return OperatorMembership.builder().id(UUID.randomUUID()).userId(userId)
+        return OperatorMembership.builder().id(UUID.randomUUID()).operatorAccountId(UUID.randomUUID()).userId(userId)
                 .memberRole(role).status(status).createdAt(Instant.now()).build();
     }
 }

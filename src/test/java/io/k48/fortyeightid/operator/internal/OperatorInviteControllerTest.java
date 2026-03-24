@@ -4,11 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.audit.AuditService;
-import io.k48.fortyeightid.auth.OperatorInviteTokenPort;
-import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.shared.exception.ResetTokenExpiredException;
 import io.k48.fortyeightid.shared.exception.ResetTokenInvalidException;
 import java.util.UUID;
@@ -21,34 +17,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OperatorInviteControllerTest {
 
-    @Mock private OperatorInviteTokenPort operatorInviteTokenPort;
-    @Mock private OperatorAccountService operatorAccountService;
-    @Mock private UserRoleService userRoleService;
-    @Mock private AuditService auditService;
-
+    @Mock private OperatorInviteService operatorInviteService;
     @InjectMocks private OperatorInviteController controller;
 
     @Test
-    void acceptOperatorInvite_validToken_returnsSuccess() {
-        var userId = UUID.randomUUID();
-        var request = new AcceptOperatorInviteRequest("valid-token");
-
-        when(operatorInviteTokenPort.validateAndConsumeInviteToken("valid-token")).thenReturn(userId);
+    void acceptOperatorInvite_validRequest_returnsSuccess() {
+        var accountId = UUID.randomUUID();
+        var request = new AcceptOperatorInviteRequest("valid-token", accountId);
 
         var response = controller.acceptOperatorInvite(request);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).containsEntry("success", true);
-        verify(operatorAccountService).acceptInvite(userId);
-        verify(userRoleService).changeRole(userId, "OPERATOR");
-        verify(auditService).log(userId, "OPERATOR_INVITE_ACCEPTED", java.util.Map.of("userId", userId.toString()));
+        verify(operatorInviteService).acceptInviteFlow("valid-token", accountId);
     }
 
     @Test
     void acceptOperatorInvite_invalidToken_throws() {
-        var request = new AcceptOperatorInviteRequest("bad-token");
+        var accountId = UUID.randomUUID();
+        var request = new AcceptOperatorInviteRequest("bad-token", accountId);
         doThrow(new ResetTokenInvalidException("Invalid invite token."))
-                .when(operatorInviteTokenPort).validateAndConsumeInviteToken("bad-token");
+                .when(operatorInviteService).acceptInviteFlow("bad-token", accountId);
 
         assertThatThrownBy(() -> controller.acceptOperatorInvite(request))
                 .isInstanceOf(ResetTokenInvalidException.class);
@@ -56,9 +45,10 @@ class OperatorInviteControllerTest {
 
     @Test
     void acceptOperatorInvite_expiredToken_throws() {
-        var request = new AcceptOperatorInviteRequest("expired-token");
-        doThrow(new ResetTokenExpiredException("This invite link has expired. Please request a new one."))
-                .when(operatorInviteTokenPort).validateAndConsumeInviteToken("expired-token");
+        var accountId = UUID.randomUUID();
+        var request = new AcceptOperatorInviteRequest("expired-token", accountId);
+        doThrow(new ResetTokenExpiredException("This invite link has expired."))
+                .when(operatorInviteService).acceptInviteFlow("expired-token", accountId);
 
         assertThatThrownBy(() -> controller.acceptOperatorInvite(request))
                 .isInstanceOf(ResetTokenExpiredException.class);
