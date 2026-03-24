@@ -101,6 +101,35 @@ class EmailService implements EmailPort {
                 .replace("{{activationUrl}}", escapeHtml(activationBaseUrl + "?token=" + activationToken));
     }
 
+
+    @Override
+    @Async
+    public void sendOperatorInviteEmail(String toEmail, String userName, String inviteToken) {
+        try {
+            var message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(toEmail);
+            message.setSubject("K48 ID — You have been invited as an Operator");
+            message.setText("""
+                    Hello %s,
+
+                    You have been invited to join an Operator account on K48 ID.
+
+                    Click the link below to accept your invitation (valid for 24 hours):
+
+                    %s?token=%s
+
+                    If you did not expect this invitation, please contact K48 administration.
+
+                    — K48 ID Team
+                    """.formatted(userName, activationBaseUrl.replace("activate-account", "accept-operator-invite"), inviteToken));
+            mailSender.send(message);
+            log.info("Operator invite email sent to {}", toEmail);
+        } catch (MailException ex) {
+            log.error("Failed to send operator invite email to {}: {}", toEmail, ex.getMessage(), ex);
+        }
+    }
+
     private String escapeHtml(String input) {
         if (input == null) {
             return "";
