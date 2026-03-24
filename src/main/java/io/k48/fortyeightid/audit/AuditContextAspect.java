@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.audit;
 
+import io.k48.fortyeightid.shared.JwtAuthenticationDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.UUID;
@@ -15,9 +16,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * AOP aspect that automatically captures audit events from annotated methods.
- * Extracts IP address and user agent from HTTP request context and logs
- * audit entries without boilerplate in service methods.
+ * AOP aspect that automatically captures audit events from annotated methods,
+ * and emits OPERATOR_ACTION for every ROLE_OPERATOR controller invocation.
  */
 @Aspect
 @Component
@@ -30,58 +30,87 @@ public class AuditContextAspect {
 
     @Around("@annotation(auditEvent)")
     public Object captureAuditEvent(ProceedingJoinPoint joinPoint, AuditEvent auditEvent) throws Throwable {
-        // Capture IP and user agent from request context
         captureRequestContext();
+        Object result = joinPoint.proceed();
+        UUID userId = extractUserId(joinPoint, auditEvent.userIdExpression());
+        if (userId != null) {
+            auditService.log(userId, auditEvent.type(), Map.of(),
+                    auditContext.getIpAddress(), auditContext.getUserAgent());
+        } else {
+            log.warn("Audit event '{}' skipped: could not extract user ID.", auditEvent.type());
+        }
+        return result;
+    }
 
-        // Execute the method
+    /**
+     * Emits OPERATOR_ACTION for every @RestController method called by a ROLE_OPERATOR principal.
+     */
+    @Around("within(@org.springframework.web.bind.annotation.RestController *)")
+    public Object captureOperatorAction(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result = joinPoint.proceed();
 
-        // Extract user ID from security context or method parameters
-        UUID userId = extractUserId(joinPoint, auditEvent.userIdExpression());
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) return result;
 
-        // Log the audit event
-        if (userId != null) {
-            auditService.log(userId, auditEvent.type(), Map.<String, Object>of(), 
-                auditContext.getIpAddress(), auditContext.getUserAgent());
-        } else {
-            log.warn("Audit event '{}' skipped: could not extract user ID. IP={}, UserAgent={}", 
-                auditEvent.type(), auditContext.getIpAddress(), auditContext.getUserAgent());
+        boolean isOperator = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_OPERATOR".equals(a.getAuthority()));
+        if (!isOperator) return result;
+
+        var requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (!(requestAttributes instanceof ServletRequestAttributes servletAttrs)) return result;
+
+        HttpServletRequest request = servletAttrs.getRequest();
+        String endpoint = request.getRequestURI();
+        String method = request.getMethod();
+
+        UUID userId = null;
+        try {
+            userId = UUID.fromString(authentication.getName());
+        } catch (IllegalArgumentException ignored) {
+            // principal is not a UUID — skip
+            return result;
         }
+
+        String matricule = "unknown";
+        if (authentication.getDetails() instanceof JwtAuthenticationDetails details) {
+            matricule = details.getMatricule() != null ? details.getMatricule() : "unknown";
+        }
+
+        auditService.log(userId, "OPERATOR_ACTION", Map.of(
+                "endpoint", endpoint,
+                "method", method,
+                "userId", userId.toString(),
+                "matricule", matricule));
 
         return result;
     }
 
     private void captureRequestContext() {
         var requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (requestAttributes instanceof ServletRequestAttributes) {
-            var request = ((ServletRequestAttributes) requestAttributes).getRequest();
+        if (requestAttributes instanceof ServletRequestAttributes servletAttrs) {
+            var request = servletAttrs.getRequest();
             auditContext.setIpAddress(IpUtils.extractIpAddress(request));
             auditContext.setUserAgent(request.getHeader("User-Agent"));
         }
     }
 
     private UUID extractUserId(ProceedingJoinPoint joinPoint, String userIdExpression) {
-        // Try to get user ID from security context first
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails) {
+        if (authentication != null) {
             try {
                 return UUID.fromString(authentication.getName());
-            } catch (IllegalArgumentException e) {
-                // Name is not a UUID, try other methods
+            } catch (IllegalArgumentException ignored) {
+                // not a UUID
             }
         }
-
-        // Try to extract from method parameters
         var signature = (MethodSignature) joinPoint.getSignature();
         var parameterNames = signature.getParameterNames();
         var args = joinPoint.getArgs();
-
         for (int i = 0; i < parameterNames.length; i++) {
             if (parameterNames[i].equals("userId") && args[i] instanceof UUID) {
                 return (UUID) args[i];
             }
         }
-
         return null;
     }
 }
