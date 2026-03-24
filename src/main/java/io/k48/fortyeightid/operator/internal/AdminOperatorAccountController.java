@@ -1,5 +1,6 @@
 package io.k48.fortyeightid.operator.internal;
 
+import io.k48.fortyeightid.admin.TrafficQueryPort;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 class AdminOperatorAccountController {
 
     private final OperatorAccountService operatorAccountService;
+    private final TrafficQueryPort trafficQueryPort;
 
     @GetMapping
     ResponseEntity<List<AccountResponse>> listAccounts() {
@@ -69,6 +73,13 @@ class AdminOperatorAccountController {
                                       @AuthenticationPrincipal String adminId) {
         operatorAccountService.removeMember(id, userId, UUID.fromString(adminId));
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/traffic")
+    ResponseEntity<TrafficQueryPort.AccountTrafficView> getAccountTraffic(
+            @PathVariable UUID id,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(trafficQueryPort.getAccountTrafficDetail(id, pageable));
     }
 
     record CreateAccountRequest(@NotBlank @Size(max = 100) String name, @Size(max = 500) String description) {}
