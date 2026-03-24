@@ -1,5 +1,7 @@
 package io.k48.fortyeightid.identity.internal;
 
+import io.k48.fortyeightid.shared.MatriculeValidator;
+import io.k48.fortyeightid.shared.exception.InvalidMatriculeFormatException;
 import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserProvisioningPort;
@@ -25,6 +27,9 @@ class UserProvisioningService implements UserProvisioningPort {
     public User createUser(String matricule, String email, String name,
                            String phone, String batch, String specialization,
                            String rawPassword) {
+
+        MatriculeValidator.validate(matricule, batch)
+                .ifPresent(error -> { throw new InvalidMatriculeFormatException(error); });
 
         if (userRepository.existsByMatricule(matricule)) {
             throw new DuplicateMatriculeException("Matricule already exists: " + matricule);

@@ -219,6 +219,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(InvalidMatriculeFormatException.class)
+    ProblemDetail handleInvalidMatriculeFormat(InvalidMatriculeFormatException ex) {
+        log.error("Invalid matricule format", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid Matricule Format");
+        problem.setType(URI.create("https://48id.k48.io/errors/invalid-matricule-format"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("code", "INVALID_MATRICULE_FORMAT");
+        return problem;
+    }
+
     @ExceptionHandler(CannotPromoteSuspendedUserException.class)
     ProblemDetail handleCannotPromoteSuspended(CannotPromoteSuspendedUserException ex) {
         log.warn("Cannot promote suspended user: {}", ex.getMessage());
