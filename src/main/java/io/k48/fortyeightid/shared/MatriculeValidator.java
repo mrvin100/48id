@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  */
 public class MatriculeValidator {
 
-    private static final Pattern FORMAT = Pattern.compile("^K48-B[0-9]+-[0-9]+$");
+    private static final Pattern FORMAT = Pattern.compile("^K48-B[0-9]{1,4}-[0-9]+$");
 
     private MatriculeValidator() {}
 
