@@ -45,7 +45,8 @@ class BootstrapService {
         log.info("Attempting to create first admin user with matricule: {}", request.matricule());
 
         // Check if any admin users already exist
-        var adminRole = roleQueryService.getByName("ADMIN");
+        var adminRole = roleQueryService.findByName("ADMIN")
+                .orElseThrow(() -> new IllegalStateException("Role not found: ADMIN — ensure database migrations have run"));
 
         long adminCount = userQueryService.countByRolesContaining(adminRole);
         if (adminCount > 0) {

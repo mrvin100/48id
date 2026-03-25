@@ -264,6 +264,16 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.error("Illegal state", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Conflict");
+        problem.setType(URI.create("https://48id.k48.io/errors/conflict"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     ProblemDetail handleUnexpected(RuntimeException ex) {
         log.error("Unexpected error", ex);
