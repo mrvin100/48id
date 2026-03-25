@@ -205,7 +205,7 @@ class OperatorAccountServiceTest {
 
     private User buildUser(UUID id) {
         return User.builder().id(id).email("operator@k48.io").name("Operator User")
-                .matricule("K48-2024-001").passwordHash("hash").build();
+                .matricule("K48-B1-1").passwordHash("hash").build();
     }
 
     private ApiKey buildApiKey(UUID id) {

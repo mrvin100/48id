@@ -40,7 +40,7 @@ class IdentityControllerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody().valid()).isTrue();
-        assertThat(response.getBody().user().matricule()).isEqualTo("K48-2024-001");
+        assertThat(response.getBody().user().matricule()).isEqualTo("K48-B1-1");
     }
 
     @Test
@@ -103,16 +103,16 @@ class IdentityControllerTest {
         var response = identityController.getPublicIdentity(userId);
 
         assertThat(response.getBody().id()).isEqualTo(userId.toString());
-        assertThat(response.getBody().matricule()).isEqualTo("K48-2024-001");
+        assertThat(response.getBody().matricule()).isEqualTo("K48-B1-1");
         assertThat(response.getBody().profileCompleted()).isTrue();
     }
 
     @Test
     void matriculeExists_returnsExistsResponse() {
         var user = createUser(UUID.randomUUID(), UserStatus.PENDING_ACTIVATION);
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
+        when(userQueryService.findByMatricule("K48-B1-1")).thenReturn(Optional.of(user));
 
-        var response = identityController.matriculeExists("K48-2024-001");
+        var response = identityController.matriculeExists("K48-B1-1");
 
         assertThat(response.getBody().exists()).isTrue();
         assertThat(response.getBody().status()).isEqualTo("PENDING_ACTIVATION");
@@ -120,9 +120,9 @@ class IdentityControllerTest {
 
     @Test
     void matriculeExists_returnsNotExistsResponse() {
-        when(userQueryService.findByMatricule("K48-2024-404")).thenReturn(Optional.empty());
+        when(userQueryService.findByMatricule("K48-B1-404")).thenReturn(Optional.empty());
 
-        var response = identityController.matriculeExists("K48-2024-404");
+        var response = identityController.matriculeExists("K48-B1-404");
 
         assertThat(response.getBody().exists()).isFalse();
         assertThat(response.getBody().status()).isNull();
@@ -133,7 +133,7 @@ class IdentityControllerTest {
                 .header("alg", "RS256")
                 .subject(subject)
                 .claim("role", "STUDENT")
-                .claim("matricule", "K48-2024-001")
+                .claim("matricule", "K48-B1-1")
                 .claim("name", "Test User")
                 .claim("batch", "2024")
                 .issuedAt(Instant.now())
@@ -147,7 +147,7 @@ class IdentityControllerTest {
 
         return User.builder()
                 .id(id)
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("hash")

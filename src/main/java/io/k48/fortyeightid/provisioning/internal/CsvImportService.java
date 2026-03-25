@@ -36,7 +36,7 @@ class CsvImportService {
 
     String generateTemplate() {
         var header = String.join(",", EXPECTED_HEADER);
-        var exampleRow = "K48-2024-001,john.doe@k48.io,John Doe,+237600000000,2024,Software Engineering";
+        var exampleRow = "K48-B1-1,john.doe@k48.io,John Doe,+237600000000,B1,Software Engineering";
         return header + "\n" + exampleRow + "\n";
     }
 

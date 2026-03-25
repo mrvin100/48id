@@ -28,7 +28,7 @@ class UserRepositoryTest {
     void setUp() {
         userRepository.deleteAll();
         savedUser = userRepository.save(User.builder()
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("$2a$10$hashedpassword")
@@ -39,7 +39,7 @@ class UserRepositoryTest {
 
     @Test
     void findByMatricule_returnsUser() {
-        var result = userRepository.findByMatricule("K48-2024-001");
+        var result = userRepository.findByMatricule("K48-B1-1");
         assertThat(result).isPresent();
         assertThat(result.get().getEmail()).isEqualTo("test@k48.io");
     }
@@ -53,12 +53,12 @@ class UserRepositoryTest {
     void findByEmail_returnsUser() {
         var result = userRepository.findByEmail("test@k48.io");
         assertThat(result).isPresent();
-        assertThat(result.get().getMatricule()).isEqualTo("K48-2024-001");
+        assertThat(result.get().getMatricule()).isEqualTo("K48-B1-1");
     }
 
     @Test
     void existsByMatricule_returnsTrue() {
-        assertThat(userRepository.existsByMatricule("K48-2024-001")).isTrue();
+        assertThat(userRepository.existsByMatricule("K48-B1-1")).isTrue();
     }
 
     @Test

@@ -36,7 +36,7 @@ class CsvImportServiceTest {
         var template = csvImportService.generateTemplate();
 
         assertThat(template).contains("matricule,email,name,phone,batch,specialization");
-        assertThat(template).contains("K48-2024-001");
+        assertThat(template).contains("K48-B1-1");
         assertThat(template).contains("john.doe@k48.io");
     }
 
@@ -47,15 +47,15 @@ class CsvImportServiceTest {
 
         assertThat(lines).hasSize(2);
         assertThat(lines[0].trim()).isEqualTo("matricule,email,name,phone,batch,specialization");
-        assertThat(lines[1].trim()).contains("K48-2024-001,john.doe@k48.io,John Doe");
+        assertThat(lines[1].trim()).contains("K48-B1-1,john.doe@k48.io,John Doe");
     }
 
     @Test
     void importUsers_successfullyImportsAllValidRows() {
         var csv = """
                 matricule,email,name,phone,batch,specialization
-                K48-2024-001,user1@k48.io,User One,+123,2024,SE
-                K48-2024-002,user2@k48.io,User Two,+456,2024,DA
+                K48-B1-1,user1@k48.io,User One,+123,B1,SE
+                K48-B1-2,user2@k48.io,User Two,+456,B1,DA
                 """;
         var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
         var adminId = UUID.randomUUID();
@@ -63,7 +63,7 @@ class CsvImportServiceTest {
         when(userProvisioningService.createUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(User.builder()
                         .id(UUID.randomUUID())
-                        .matricule("K48-2024-001")
+                        .matricule("K48-B1-1")
                         .email("user1@k48.io")
                         .name("User One")
                         .status(UserStatus.PENDING_ACTIVATION)
@@ -81,16 +81,16 @@ class CsvImportServiceTest {
     void importUsers_skipsDuplicateMatricules() {
         var csv = """
                 matricule,email,name,phone,batch,specialization
-                K48-2024-001,user1@k48.io,User One,+123,2024,SE
-                K48-2024-002,user2@k48.io,User Two,+456,2024,DA
+                K48-B1-1,user1@k48.io,User One,+123,B1,SE
+                K48-B1-2,user2@k48.io,User Two,+456,B1,DA
                 """;
         var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
         var adminId = UUID.randomUUID();
 
-        when(userProvisioningService.createUser(eq("K48-2024-001"), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(userProvisioningService.createUser(eq("K48-B1-1"), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new DuplicateMatriculeException("Matricule already exists"));
-        when(userProvisioningService.createUser(eq("K48-2024-002"), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-2024-002").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
+        when(userProvisioningService.createUser(eq("K48-B1-2"), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-B1-2").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
 
         var result = csvImportService.importUsers(file, adminId);
 
@@ -103,14 +103,14 @@ class CsvImportServiceTest {
     void importUsers_skipsRowsWithMissingRequiredFields() {
         var csv = """
                 matricule,email,name,phone,batch,specialization
-                K48-2024-001,,User One,+123,2024,SE
-                K48-2024-002,user2@k48.io,User Two,+456,2024,DA
+                K48-B1-1,,User One,+123,B1,SE
+                K48-B1-2,user2@k48.io,User Two,+456,B1,DA
                 """;
         var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
         var adminId = UUID.randomUUID();
 
         when(userProvisioningService.createUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-2024-002").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
+                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-B1-2").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
 
         var result = csvImportService.importUsers(file, adminId);
 
@@ -123,14 +123,14 @@ class CsvImportServiceTest {
     void importUsers_skipsRowsWithInvalidEmailFormat() {
         var csv = """
                 matricule,email,name,phone,batch,specialization
-                K48-2024-001,invalid-email,User One,+123,2024,SE
-                K48-2024-002,user2@k48.io,User Two,+456,2024,DA
+                K48-B1-1,invalid-email,User One,+123,B1,SE
+                K48-B1-2,user2@k48.io,User Two,+456,B1,DA
                 """;
         var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
         var adminId = UUID.randomUUID();
 
         when(userProvisioningService.createUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-2024-002").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
+                .thenReturn(User.builder().id(UUID.randomUUID()).matricule("K48-B1-2").email("user2@k48.io").name("User Two").status(UserStatus.PENDING_ACTIVATION).build());
 
         var result = csvImportService.importUsers(file, adminId);
 

@@ -25,7 +25,7 @@ class CsvImportControllerTest {
 
     @Test
     void downloadTemplate_returnsCsvFileWithCorrectHeaders() {
-        var expectedTemplate = "matricule,email,name,phone,batch,specialization\nK48-2024-001,john.doe@k48.io,John Doe,+237600000000,2024,Software Engineering\n";
+        var expectedTemplate = "matricule,email,name,phone,batch,specialization\nK48-B1-1,john.doe@k48.io,John Doe,+237600000000,2024,Software Engineering\n";
         when(csvImportService.generateTemplate()).thenReturn(expectedTemplate);
 
         ResponseEntity<byte[]> response = csvImportController.downloadTemplate();
