@@ -3,29 +3,24 @@ package io.k48.fortyeightid.auth;
 import java.util.UUID;
 
 /**
- * Public port for operator invite token operations.
- * Implemented by auth module internals.
+ * Port for operator invite token operations.
+ * Token is self-contained: it carries both userId and accountId.
  */
 public interface OperatorInviteTokenPort {
 
     /**
-     * Creates a new operator invite token for the given user.
+     * Creates an invite token for a user + account pair.
      *
-     * @param userId     the invited user's ID
-     * @param ttlSeconds token time-to-live in seconds; must be positive
-     * @return the raw (unhashed) token to include in the invite email
-     * @throws IllegalArgumentException if ttlSeconds is not positive
+     * @return raw token to embed in the invite email URL
      */
-    String createInviteToken(UUID userId, long ttlSeconds);
+    String createInviteToken(UUID userId, UUID accountId, long ttlSeconds);
 
     /**
-     * Validates the invite token and returns the associated user ID.
-     * Marks the token as used.
+     * Validates and consumes the token.
      *
-     * @param token the raw token from the invite email
-     * @return the user ID associated with the token
-     * @throws io.k48.fortyeightid.shared.exception.ResetTokenInvalidException if token is invalid or already used
-     * @throws io.k48.fortyeightid.shared.exception.ResetTokenExpiredException if token has expired
+     * @return the resolved userId + accountId
      */
-    UUID validateAndConsumeInviteToken(String token);
+    InviteTokenPayload validateAndConsumeInviteToken(String token);
+
+    record InviteTokenPayload(UUID userId, UUID accountId) {}
 }

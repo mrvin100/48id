@@ -50,6 +50,10 @@ class AdminUserService {
         if (targetUserId.equals(adminUserId)) {
             throw new CannotChangeOwnRoleException("Admins cannot change their own role");
         }
+        if ("OPERATOR".equals(newRole)) {
+            throw new IllegalArgumentException("OPERATOR role cannot be assigned by admin. It is earned through operator account ownership.");
+            throw new CannotChangeOwnRoleException("Admins cannot change their own role");
+        }
 
         var user = userQueryService.findById(targetUserId)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));
@@ -136,6 +140,10 @@ class AdminUserService {
 
     void softDeleteUser(UUID targetUserId, UUID adminUserId) {
         if (targetUserId.equals(adminUserId)) {
+            throw new CannotChangeOwnRoleException("Admins cannot change their own role");
+        }
+        if ("OPERATOR".equals(newRole)) {
+            throw new IllegalArgumentException("OPERATOR role cannot be assigned by admin. It is earned through operator account ownership.");
             throw new CannotDeleteOwnAccountException("Admins cannot delete their own account");
         }
 

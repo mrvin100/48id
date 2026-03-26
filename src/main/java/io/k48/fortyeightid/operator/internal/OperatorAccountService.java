@@ -3,7 +3,9 @@ package io.k48.fortyeightid.operator.internal;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.EmailPort;
+import io.k48.fortyeightid.auth.OperatorInviteTokenPort;
 import io.k48.fortyeightid.identity.UserQueryService;
+import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.shared.exception.OperatorAccountNotFoundException;
 import io.k48.fortyeightid.shared.exception.OperatorOwnershipRequiredException;
 import io.k48.fortyeightid.shared.exception.UserNotFoundException;
@@ -22,134 +24,80 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 class OperatorAccountService {
 
-    private static final long INVITE_TOKEN_TTL_SECONDS = 86400;
+    private static final long INVITE_TTL_SECONDS = 86400; // 24h
 
     private final OperatorAccountRepository operatorAccountRepository;
     private final OperatorMembershipRepository operatorMembershipRepository;
-    private final OperatorInviteTokenService operatorInviteTokenService;
+    private final OperatorInviteTokenPort operatorInviteTokenPort;
     private final ApiKeyManagementPort apiKeyManagementPort;
     private final UserQueryService userQueryService;
+    private final UserRoleService userRoleService;
     private final AuditService auditService;
     private final EmailPort emailPort;
 
-    // ── Admin operations ──────────────────────────────────────────────────────
+    // ── Student self-service ──────────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
-    List<OperatorAccount> listAccounts() {
-        return operatorAccountRepository.findAll();
-    }
-
+    /**
+     * A STUDENT creates their own OperatorAccount.
+     * They become OWNER immediately (no invite needed) and gain the OPERATOR role.
+     */
     @Transactional
-    OperatorAccount createAccount(String name, String description, UUID adminId) {
-        var saved = operatorAccountRepository.save(OperatorAccount.builder().name(name).description(description).build());
-        auditService.log(adminId, "OPERATOR_ACCOUNT_CREATED", Map.of("accountId", saved.getId().toString(), "name", name));
-        return saved;
+    OperatorAccount createAccountForStudent(String name, String description, UUID studentId) {
+        var account = operatorAccountRepository.save(
+                OperatorAccount.builder().name(name).description(description).build());
+
+        operatorMembershipRepository.save(OperatorMembership.builder()
+                .operatorAccountId(account.getId())
+                .userId(studentId)
+                .memberRole(OperatorMemberRole.OWNER)
+                .status(OperatorMemberStatus.ACTIVE)
+                .build());
+
+        userRoleService.addRole(studentId, "OPERATOR");
+
+        auditService.log(studentId, "OPERATOR_ACCOUNT_CREATED",
+                Map.of("accountId", account.getId().toString(), "name", name));
+        return account;
     }
 
-    @Transactional(readOnly = true)
-    OperatorAccount getAccount(UUID accountId) {
-        return findAccount(accountId);
-    }
-
+    /**
+     * OWNER invites another student by matricule as COLLABORATOR.
+     * Sends email with token. accountId is embedded in the token — not in the URL.
+     */
     @Transactional
-    void deleteAccount(UUID accountId, UUID adminId) {
-        operatorAccountRepository.delete(findAccount(accountId));
-        auditService.log(adminId, "OPERATOR_ACCOUNT_DELETED", Map.of("accountId", accountId.toString()));
-    }
+    void inviteMemberByMatricule(UUID accountId, String matricule, UUID ownerId) {
+        requireOwner(accountId, ownerId);
 
-    @Transactional(readOnly = true)
-    List<OperatorMembership> listMembers(UUID accountId) {
-        findAccount(accountId);
-        return operatorMembershipRepository.findAllByOperatorAccountId(accountId);
-    }
+        var invitee = userQueryService.findByMatricule(matricule)
+                .orElseThrow(() -> new UserNotFoundException("No user found with matricule: " + matricule));
 
-    @Transactional
-    void inviteMember(UUID accountId, UUID targetUserId, String role, UUID adminId) {
-        findAccount(accountId);
-        var user = userQueryService.findById(targetUserId)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));
+        // Idempotent: skip if already an active member
+        operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, invitee.getId())
+                .ifPresent(m -> {
+                    if (m.getStatus() == OperatorMemberStatus.ACTIVE)
+                        throw new IllegalStateException("User is already an active member of this account");
+                });
 
         operatorMembershipRepository.save(OperatorMembership.builder()
                 .operatorAccountId(accountId)
-                .userId(targetUserId)
-                .memberRole(OperatorMemberRole.valueOf(role))
+                .userId(invitee.getId())
+                .memberRole(OperatorMemberRole.COLLABORATOR)
                 .status(OperatorMemberStatus.PENDING)
                 .build());
 
-        var rawToken = operatorInviteTokenService.createInviteToken(targetUserId, INVITE_TOKEN_TTL_SECONDS);
+        var rawToken = operatorInviteTokenPort.createInviteToken(invitee.getId(), accountId, INVITE_TTL_SECONDS);
 
-        // Send email only after the transaction commits — avoids email on rollback
-        final String toEmail = user.getEmail();
-        final String userName = user.getName();
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    emailPort.sendOperatorInviteEmail(toEmail, userName, rawToken);
-                }
-            });
-        } else {
-            emailPort.sendOperatorInviteEmail(toEmail, userName, rawToken);
-        }
+        final String toEmail = invitee.getEmail();
+        final String toName = invitee.getName();
+        afterCommit(() -> emailPort.sendOperatorInviteEmail(toEmail, toName, rawToken));
 
-        auditService.log(adminId, "OPERATOR_MEMBER_INVITED",
-                Map.of("accountId", accountId.toString(), "targetUser", targetUserId.toString(), "role", role));
-        log.info("Operator invite queued for user {} on account {}", targetUserId, accountId);
+        auditService.log(ownerId, "OPERATOR_MEMBER_INVITED",
+                Map.of("accountId", accountId.toString(), "invitee", invitee.getId().toString()));
     }
 
-    @Transactional
-    void removeMember(UUID accountId, UUID targetUserId, UUID adminId) {
-        findAccount(accountId);
-        operatorMembershipRepository.deleteByOperatorAccountIdAndUserId(accountId, targetUserId);
-        auditService.log(adminId, "OPERATOR_MEMBER_REMOVED",
-                Map.of("accountId", accountId.toString(), "targetUser", targetUserId.toString()));
-    }
-
-    // ── Operator API key operations ───────────────────────────────────────────
-
-    @Transactional
-    OperatorApiKeyCreationResult createApiKey(UUID operatorAccountId, UUID userId, String appName, String description) {
-        requireOwner(operatorAccountId, userId);
-        var result = apiKeyManagementPort.createApiKey(appName, description, userId);
-        var account = findAccount(operatorAccountId);
-        account.setOwnedApiKeyId(result.apiKey().getId());
-        operatorAccountRepository.save(account);
-        return new OperatorApiKeyCreationResult(result.rawKey(), result.apiKey());
-    }
-
-    @Transactional(readOnly = true)
-    OperatorApiKeyView getApiKey(UUID operatorAccountId, UUID userId) {
-        requireMember(operatorAccountId, userId);
-        var account = findAccount(operatorAccountId);
-        if (account.getOwnedApiKeyId() == null) return null;
-        return apiKeyManagementPort.listAll().stream()
-                .filter(k -> k.getId().equals(account.getOwnedApiKeyId()))
-                .findFirst().map(OperatorApiKeyView::from).orElse(null);
-    }
-
-    @Transactional
-    OperatorApiKeyRotationResult rotateApiKey(UUID operatorAccountId, UUID userId) {
-        requireOwner(operatorAccountId, userId);
-        var account = findAccount(operatorAccountId);
-        if (account.getOwnedApiKeyId() == null)
-            throw new OperatorAccountNotFoundException("No API key linked to this operator account");
-        var result = apiKeyManagementPort.rotateApiKey(account.getOwnedApiKeyId(), userId);
-        return new OperatorApiKeyRotationResult(result.rawKey(), result.applicationName(), result.rotatedAt());
-    }
-
-    @Transactional
-    void deleteApiKey(UUID operatorAccountId, UUID userId) {
-        requireOwner(operatorAccountId, userId);
-        var account = findAccount(operatorAccountId);
-        if (account.getOwnedApiKeyId() == null)
-            throw new OperatorAccountNotFoundException("No API key linked to this operator account");
-        apiKeyManagementPort.revokeApiKey(account.getOwnedApiKeyId(), userId);
-        account.setOwnedApiKeyId(null);
-        operatorAccountRepository.save(account);
-    }
-
-    // ── Invite acceptance ─────────────────────────────────────────────────────
-
+    /**
+     * Accepts an invite. accountId comes from the token — client only sends the token.
+     */
     @Transactional
     void acceptInvite(UUID userId, UUID accountId) {
         var membership = operatorMembershipRepository
@@ -158,7 +106,120 @@ class OperatorAccountService {
                         "No pending invite found for user " + userId + " on account " + accountId));
         membership.setStatus(OperatorMemberStatus.ACTIVE);
         operatorMembershipRepository.save(membership);
+        userRoleService.addRole(userId, "OPERATOR");
         log.info("Operator invite accepted by user {} for account {}", userId, accountId);
+    }
+
+    /**
+     * OWNER deletes the account. All memberships are removed.
+     * Any member (including owner) who has no remaining active memberships loses the OPERATOR role.
+     */
+    @Transactional
+    void deleteAccount(UUID accountId, UUID ownerId) {
+        requireOwner(accountId, ownerId);
+
+        var members = operatorMembershipRepository.findAllByOperatorAccountId(accountId);
+        var affectedUserIds = members.stream().map(OperatorMembership::getUserId).toList();
+
+        operatorAccountRepository.deleteById(accountId); // cascades memberships via FK
+
+        // Revoke OPERATOR role for any member who no longer belongs to any active account
+        for (UUID userId : affectedUserIds) {
+            boolean stillActive = operatorMembershipRepository.findAllByUserId(userId).stream()
+                    .anyMatch(m -> m.getStatus() == OperatorMemberStatus.ACTIVE);
+            if (!stillActive) {
+                userRoleService.removeRole(userId, "OPERATOR");
+            }
+        }
+
+        auditService.log(ownerId, "OPERATOR_ACCOUNT_DELETED", Map.of("accountId", accountId.toString()));
+    }
+
+    /**
+     * OWNER removes a collaborator. If they have no other active memberships, they lose OPERATOR role.
+     */
+    @Transactional
+    void removeMember(UUID accountId, UUID targetUserId, UUID ownerId) {
+        requireOwner(accountId, ownerId);
+        operatorMembershipRepository.deleteByOperatorAccountIdAndUserId(accountId, targetUserId);
+
+        boolean stillActive = operatorMembershipRepository.findAllByUserId(targetUserId).stream()
+                .anyMatch(m -> m.getStatus() == OperatorMemberStatus.ACTIVE);
+        if (!stillActive) {
+            userRoleService.removeRole(targetUserId, "OPERATOR");
+        }
+
+        auditService.log(ownerId, "OPERATOR_MEMBER_REMOVED",
+                Map.of("accountId", accountId.toString(), "targetUser", targetUserId.toString()));
+    }
+
+    // ── Read operations ───────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    List<OperatorAccount> listAccountsForUser(UUID userId) {
+        return operatorMembershipRepository.findAllByUserId(userId).stream()
+                .filter(m -> m.getStatus() == OperatorMemberStatus.ACTIVE)
+                .map(m -> operatorAccountRepository.findById(m.getOperatorAccountId()).orElse(null))
+                .filter(a -> a != null)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    List<OperatorAccount> listAllAccounts() {
+        return operatorAccountRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    OperatorAccount getAccount(UUID accountId) {
+        return findAccount(accountId);
+    }
+
+    @Transactional(readOnly = true)
+    List<OperatorMembership> listMembers(UUID accountId) {
+        findAccount(accountId);
+        return operatorMembershipRepository.findAllByOperatorAccountId(accountId);
+    }
+
+    // ── API key operations (unchanged, OWNER only) ────────────────────────────
+
+    @Transactional
+    OperatorApiKeyCreationResult createApiKey(UUID accountId, UUID userId, String appName, String description) {
+        requireOwner(accountId, userId);
+        var result = apiKeyManagementPort.createApiKey(appName, description, userId);
+        var account = findAccount(accountId);
+        account.setOwnedApiKeyId(result.apiKey().getId());
+        operatorAccountRepository.save(account);
+        return new OperatorApiKeyCreationResult(result.rawKey(), result.apiKey());
+    }
+
+    @Transactional(readOnly = true)
+    OperatorApiKeyView getApiKey(UUID accountId, UUID userId) {
+        requireMember(accountId, userId);
+        var account = findAccount(accountId);
+        if (account.getOwnedApiKeyId() == null) return null;
+        return apiKeyManagementPort.listAll().stream()
+                .filter(k -> k.getId().equals(account.getOwnedApiKeyId()))
+                .findFirst().map(OperatorApiKeyView::from).orElse(null);
+    }
+
+    @Transactional
+    OperatorApiKeyRotationResult rotateApiKey(UUID accountId, UUID userId) {
+        requireOwner(accountId, userId);
+        var account = findAccount(accountId);
+        if (account.getOwnedApiKeyId() == null)
+            throw new OperatorAccountNotFoundException("No API key linked to this operator account");
+        return apiKeyManagementPort.rotateApiKey(account.getOwnedApiKeyId(), userId);
+    }
+
+    @Transactional
+    void deleteApiKey(UUID accountId, UUID userId) {
+        requireOwner(accountId, userId);
+        var account = findAccount(accountId);
+        if (account.getOwnedApiKeyId() == null)
+            throw new OperatorAccountNotFoundException("No API key linked to this operator account");
+        apiKeyManagementPort.revokeApiKey(account.getOwnedApiKeyId(), userId);
+        account.setOwnedApiKeyId(null);
+        operatorAccountRepository.save(account);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -182,5 +243,15 @@ class OperatorAccountService {
                 .orElseThrow(() -> new OperatorOwnershipRequiredException("You are not a member of this operator account"));
         if (m.getStatus() != OperatorMemberStatus.ACTIVE)
             throw new OperatorOwnershipRequiredException("Membership is not active");
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { action.run(); }
+            });
+        } else {
+            action.run();
+        }
     }
 }

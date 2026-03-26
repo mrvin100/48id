@@ -19,7 +19,7 @@ class OperatorInviteController {
     @PostMapping("/accept-operator-invite")
     ResponseEntity<Map<String, Boolean>> acceptOperatorInvite(
             @Valid @RequestBody AcceptOperatorInviteRequest request) {
-        operatorInviteService.acceptInviteFlow(request.token(), request.accountId());
+        operatorInviteService.acceptInviteFlow(request.token());
         return ResponseEntity.ok(Map.of("success", true));
     }
 }
