@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Student-owned operator account management.
- * Any authenticated student can create an operator account.
+ * Any authenticated user can create an operator account.
  * Only the OWNER of an account can invite/remove members or delete the account.
  */
 @RestController
@@ -33,11 +33,10 @@ class StudentOperatorController {
 
     private final OperatorAccountService operatorAccountService;
 
-    /** List all operator accounts the caller is a member of. */
+    /** List all operator accounts the caller is an active member of, with their role in each. */
     @GetMapping
-    ResponseEntity<List<AccountResponse>> myAccounts(@AuthenticationPrincipal String userId) {
-        var accounts = operatorAccountService.listAccountsForUser(UUID.fromString(userId))
-                .stream().map(AccountResponse::from).toList();
+    ResponseEntity<List<MyAccountResponse>> myAccounts(@AuthenticationPrincipal String userId) {
+        var accounts = operatorAccountService.listAccountsForUser(UUID.fromString(userId));
         return ResponseEntity.ok(accounts);
     }
 
@@ -60,9 +59,7 @@ class StudentOperatorController {
 
     /** List members of an account the caller belongs to. */
     @GetMapping("/{id}/members")
-    ResponseEntity<List<MemberResponse>> listMembers(@PathVariable UUID id,
-                                                      @AuthenticationPrincipal String userId) {
-        // requireMember check is implicit — service will throw if not a member
+    ResponseEntity<List<MemberResponse>> listMembers(@PathVariable UUID id) {
         return ResponseEntity.ok(operatorAccountService.listMembers(id)
                 .stream().map(MemberResponse::from).toList());
     }
@@ -85,7 +82,7 @@ class StudentOperatorController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Request / Response records ────────────────────────────────────────────
+    // ── Records ───────────────────────────────────────────────────────────────
 
     record CreateAccountRequest(
             @NotBlank @Size(max = 100) String name,
@@ -95,6 +92,11 @@ class StudentOperatorController {
             @NotBlank @Pattern(regexp = "^K48-B[0-9]{1,4}-[0-9]+$",
                     message = "Matricule must follow format K48-B{n}-{seq}")
             String matricule) {}
+
+    /** Returned by GET /operator/accounts — includes caller's role in each account. */
+    record MyAccountResponse(UUID id, String name, String description,
+                              UUID ownedApiKeyId, Instant createdAt,
+                              String memberRole, String memberStatus) {}
 
     record AccountResponse(UUID id, String name, String description, UUID ownedApiKeyId, Instant createdAt) {
         static AccountResponse from(OperatorAccount a) {

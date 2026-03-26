@@ -156,11 +156,15 @@ class OperatorAccountService {
     // ── Read operations ───────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    List<OperatorAccount> listAccountsForUser(UUID userId) {
+    List<StudentOperatorController.MyAccountResponse> listAccountsForUser(UUID userId) {
         return operatorMembershipRepository.findAllByUserId(userId).stream()
                 .filter(m -> m.getStatus() == OperatorMemberStatus.ACTIVE)
-                .map(m -> operatorAccountRepository.findById(m.getOperatorAccountId()).orElse(null))
-                .filter(a -> a != null)
+                .flatMap(m -> operatorAccountRepository.findById(m.getOperatorAccountId())
+                        .map(a -> new StudentOperatorController.MyAccountResponse(
+                                a.getId(), a.getName(), a.getDescription(),
+                                a.getOwnedApiKeyId(), a.getCreatedAt(),
+                                m.getMemberRole().name(), m.getStatus().name()))
+                        .stream())
                 .toList();
     }
 
@@ -220,6 +224,12 @@ class OperatorAccountService {
         apiKeyManagementPort.revokeApiKey(account.getOwnedApiKeyId(), userId);
         account.setOwnedApiKeyId(null);
         operatorAccountRepository.save(account);
+    }
+
+    /** Public membership check — used by other controllers to gate access. */
+    @Transactional(readOnly = true)
+    void requireActiveMember(UUID accountId, UUID userId) {
+        requireMember(accountId, userId);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

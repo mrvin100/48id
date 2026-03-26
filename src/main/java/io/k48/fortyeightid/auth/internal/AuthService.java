@@ -12,7 +12,6 @@ import io.k48.fortyeightid.shared.exception.UserNotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -91,7 +90,7 @@ class AuthService {
 
         var roles = user.getRoles().stream()
                 .map(r -> r.getName())
-                .collect(Collectors.joining(","));
+                .toList();
 
         var userInfo = new LoginResponse.UserInfo(
                 user.getId().toString(),
