@@ -38,7 +38,7 @@ class EmailServiceTest {
         emailService.sendActivationEmail(
                 "student@k48.io",
                 "Ama Owusu",
-                "K48-2024-001",
+                "K48-B1-1",
                 "TempPass123!",
                 "activation-token"
         );
@@ -56,7 +56,7 @@ class EmailServiceTest {
         emailService.sendActivationEmail(
                 "student@k48.io",
                 "Ama <script>alert('xss')</script> Owusu",
-                "K48-2024-001",
+                "K48-B1-1",
                 "TempPass123!",
                 "activation-token"
         );
@@ -73,7 +73,7 @@ class EmailServiceTest {
         emailService.sendActivationEmail(
                 "student@k48.io",
                 "Ama Owusu",
-                "K48-2024-001",
+                "K48-B1-1",
                 "TempPass123!",
                 "activation-token"
         );

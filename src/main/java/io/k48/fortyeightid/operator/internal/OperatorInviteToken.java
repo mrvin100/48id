@@ -21,7 +21,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class OperatorInviteToken {
+public class OperatorInviteToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
