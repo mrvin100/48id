@@ -28,7 +28,7 @@ class CsvImportController {
         var csvContent = csvImportService.generateTemplate();
         
         var headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
         headers.setContentDispositionFormData("attachment", "48id_import_template.csv");
         
         return ResponseEntity.ok()

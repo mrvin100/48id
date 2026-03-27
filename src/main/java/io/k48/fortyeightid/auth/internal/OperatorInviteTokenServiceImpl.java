@@ -1,8 +1,6 @@
 package io.k48.fortyeightid.auth.internal;
 
 import io.k48.fortyeightid.auth.OperatorInviteTokenPort;
-import io.k48.fortyeightid.operator.internal.OperatorInviteTokenRepository;
-import io.k48.fortyeightid.operator.internal.OperatorInviteToken;
 import io.k48.fortyeightid.shared.exception.ResetTokenExpiredException;
 import io.k48.fortyeightid.shared.exception.ResetTokenInvalidException;
 import java.time.Instant;

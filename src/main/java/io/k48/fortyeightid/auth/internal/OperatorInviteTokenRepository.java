@@ -1,4 +1,4 @@
-package io.k48.fortyeightid.operator.internal;
+package io.k48.fortyeightid.auth.internal;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import io.k48.fortyeightid.admin.DashboardQueryPort;
 import io.k48.fortyeightid.admin.DashboardQueryPort.DashboardSnapshot;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,8 @@ class OperatorDashboardControllerTest {
 
     @Mock
     private DashboardQueryPort dashboardQueryPort;
+    @Mock
+    private OperatorAccountService operatorAccountService;
 
     @InjectMocks
     private OperatorDashboardController operatorDashboardController;
@@ -26,11 +29,14 @@ class OperatorDashboardControllerTest {
     @Test
     void getDashboardMetrics_returnsSnapshotFromPort() {
         // Given: A dashboard snapshot exists
+        var accountId = UUID.randomUUID();
+        var callerId = UUID.randomUUID().toString();
         var snapshot = new DashboardSnapshot(1500L, 1200L, 150L, 50L, 25L);
         when(dashboardQueryPort.getDashboardSnapshot()).thenReturn(snapshot);
 
         // When: Operator requests dashboard metrics
-        ResponseEntity<OperatorDashboardResponse> response = operatorDashboardController.getDashboardMetrics();
+        ResponseEntity<OperatorDashboardResponse> response = operatorDashboardController.getDashboardMetrics(
+                accountId, callerId);
 
         // Then: Returns mapped snapshot with 200 OK
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();

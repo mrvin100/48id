@@ -140,6 +140,62 @@ class CsvImportServiceTest {
     }
 
     @Test
+    void importUsers_allowsBlankPhone() {
+        var csv = """
+                matricule,email,name,phone,batch,specialization
+                K48-B1-1,user1@k48.io,User One,,B1,SE
+                """;
+        var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
+        var adminId = UUID.randomUUID();
+
+        when(userProvisioningService.createUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(User.builder()
+                        .id(UUID.randomUUID())
+                        .matricule("K48-B1-1")
+                        .email("user1@k48.io")
+                        .name("User One")
+                        .status(UserStatus.PENDING_ACTIVATION)
+                        .build());
+
+        var result = csvImportService.importUsers(file, adminId);
+
+        assertThat(result.imported()).isEqualTo(1);
+        assertThat(result.failed()).isEqualTo(0);
+    }
+
+    @Test
+    void importUsers_rejectsInvalidBatchFormat() {
+        var csv = """
+                matricule,email,name,phone,batch,specialization
+                K48-B1-1,user1@k48.io,User One,+237600000000,2024,SE
+                """;
+        var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
+        var adminId = UUID.randomUUID();
+
+        var result = csvImportService.importUsers(file, adminId);
+
+        assertThat(result.imported()).isEqualTo(0);
+        assertThat(result.failed()).isEqualTo(1);
+        assertThat(result.errors().get(0).error()).isEqualTo("INVALID_BATCH_FORMAT");
+    }
+
+    @Test
+    void importUsers_rejectsMismatchedMatriculeBatch() {
+        var csv = """
+                matricule,email,name,phone,batch,specialization
+                K48-B2-1,user1@k48.io,User One,+237600000000,B1,SE
+                """;
+        var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());
+        var adminId = UUID.randomUUID();
+
+        var result = csvImportService.importUsers(file, adminId);
+
+        assertThat(result.imported()).isEqualTo(0);
+        assertThat(result.failed()).isEqualTo(1);
+        assertThat(result.errors().get(0).error()).contains("INVALID_MATRICULE_FORMAT");
+    }
+
+    @Test
     void importUsers_throwsExceptionForEmptyCsv() {
         var csv = "matricule,email,name,phone,batch,specialization\n";
         var file = new MockMultipartFile("file", "users.csv", "text/csv", csv.getBytes());

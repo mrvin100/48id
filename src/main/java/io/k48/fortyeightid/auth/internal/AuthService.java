@@ -95,10 +95,16 @@ class AuthService {
         var userInfo = new LoginResponse.UserInfo(
                 user.getId().toString(),
                 user.getMatricule(),
+                user.getEmail(),
                 user.getName(),
                 roles,
                 user.getBatch(),
-                user.getSpecialization()
+                user.getSpecialization(),
+                user.getStatus().name(),
+                user.isProfileCompleted(),
+                user.getLastLoginAt(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         );
 
         return new LoginResponse(

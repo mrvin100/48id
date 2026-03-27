@@ -5,6 +5,7 @@ import com.opencsv.exceptions.CsvException;
 import io.k48.fortyeightid.audit.AuditService;
 import io.k48.fortyeightid.auth.PasswordResetPort;
 import io.k48.fortyeightid.identity.UserProvisioningPort;
+import io.k48.fortyeightid.shared.MatriculeValidator;
 import io.k48.fortyeightid.shared.exception.DuplicateEmailException;
 import io.k48.fortyeightid.shared.exception.DuplicateMatriculeException;
 import java.io.IOException;
@@ -27,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 class CsvImportService {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^(\\+237|0)[1-9](\\d{8})$");
+    private static final Pattern BATCH_PATTERN = Pattern.compile("^B\\d+$");
     private static final List<String> EXPECTED_HEADER = List.of("matricule", "email", "name", "phone", "batch", "specialization");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -61,13 +64,13 @@ class CsvImportService {
             throw new CsvImportException("INVALID_FILE_FORMAT", "File is empty or missing");
         }
 
-        var contentType = file.getContentType();
-        var filename = file.getOriginalFilename();
-        var looksLikeCsvByMime = contentType == null
+        String contentType = file.getContentType();
+        String filename = file.getOriginalFilename();
+        boolean looksLikeCsvByMime = contentType == null
                 || contentType.contains("csv")
                 || contentType.contains("text")
                 || contentType.contains("application/vnd.ms-excel");
-        var looksLikeCsvByName = filename != null && filename.toLowerCase().endsWith(".csv");
+        boolean looksLikeCsvByName = filename != null && filename.toLowerCase().endsWith(".csv");
 
         if (!looksLikeCsvByMime && !looksLikeCsvByName) {
             throw new CsvImportException("INVALID_FILE_FORMAT", "File must be a CSV file");
@@ -76,7 +79,7 @@ class CsvImportService {
 
     private List<CsvRow> parseAndValidateCsv(MultipartFile file) throws IOException, CsvException {
         try (var reader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
-            var allRows = reader.readAll();
+            List<String[]> allRows = reader.readAll();
 
             if (allRows.isEmpty()) {
                 throw new CsvImportException("CSV_NO_DATA_ROWS", "CSV file is empty");
@@ -86,7 +89,7 @@ class CsvImportService {
 
             var rows = new ArrayList<CsvRow>();
             for (int i = 1; i < allRows.size(); i++) {
-                var row = allRows.get(i);
+                String[] row = allRows.get(i);
                 if (row.length == 0 || (row.length == 1 && row[0].isBlank())) {
                     continue;
                 }
@@ -159,9 +162,6 @@ class CsvImportService {
         if (row.name() == null || row.name().isBlank()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: name");
         }
-        if (row.phone() == null || row.phone().isBlank()) {
-            return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: phone");
-        }
         if (row.batch() == null || row.batch().isBlank()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "MISSING_REQUIRED_FIELD: batch");
         }
@@ -170,6 +170,19 @@ class CsvImportService {
         }
         if (!EMAIL_PATTERN.matcher(row.email()).matches()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_EMAIL_FORMAT");
+        }
+        if (!row.email().toLowerCase().endsWith("@k48.io")) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_EMAIL_DOMAIN");
+        }
+        if (row.phone() != null && !row.phone().isBlank() && !PHONE_PATTERN.matcher(row.phone()).matches()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_PHONE_FORMAT");
+        }
+        if (!BATCH_PATTERN.matcher(row.batch()).matches()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_BATCH_FORMAT");
+        }
+        var matriculeValidationError = MatriculeValidator.validate(row.matricule(), row.batch());
+        if (matriculeValidationError.isPresent()) {
+            return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_MATRICULE_FORMAT: " + matriculeValidationError.get());
         }
         return null;
     }

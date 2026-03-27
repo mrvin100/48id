@@ -12,7 +12,6 @@ import io.k48.fortyeightid.identity.Role;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserStatus;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -31,6 +30,8 @@ class OperatorUserControllerTest {
 
     @Mock
     private DashboardQueryPort dashboardQueryPort;
+    @Mock
+    private OperatorAccountService operatorAccountService;
 
     @InjectMocks
     private OperatorUserController operatorUserController;
@@ -38,13 +39,15 @@ class OperatorUserControllerTest {
     @Test
     void listUsers_returnsPaginatedUsers() {
         // Given: Users exist
+        var accountId = UUID.randomUUID();
+        var callerId = UUID.randomUUID().toString();
         var user = buildUser(UUID.randomUUID(), "K48-B1-1");
         var page = new PageImpl<>(List.of(user));
         when(dashboardQueryPort.listUsers(any(), any(), any(), any(Pageable.class))).thenReturn(page);
 
         // When: Operator lists users
         ResponseEntity<Page<OperatorUserResponse>> response = operatorUserController.listUsers(
-                null, null, null, PageRequest.of(0, 20));
+                accountId, null, null, null, PageRequest.of(0, 20), callerId);
 
         // Then: Returns paginated users with 200 OK
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -57,13 +60,15 @@ class OperatorUserControllerTest {
     @Test
     void listUsers_withStatusFilter_passesFilterToPort() {
         // Given: Only active users
+        var accountId = UUID.randomUUID();
+        var callerId = UUID.randomUUID().toString();
         var page = new PageImpl<>(List.of(buildUser(UUID.randomUUID(), "K48-B1-2")));
         when(dashboardQueryPort.listUsers(eq(UserStatus.ACTIVE), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
         // When: Operator filters by ACTIVE status
         ResponseEntity<Page<OperatorUserResponse>> response = operatorUserController.listUsers(
-                UserStatus.ACTIVE, null, null, PageRequest.of(0, 20));
+                accountId, UserStatus.ACTIVE, null, null, PageRequest.of(0, 20), callerId);
 
         // Then: Filter is forwarded to port
         assertThat(response.getBody()).isNotNull();
@@ -75,11 +80,13 @@ class OperatorUserControllerTest {
     void getUser_returnsUserById() {
         // Given: A user exists
         var userId = UUID.randomUUID();
+        var accountId = UUID.randomUUID();
+        var callerId = UUID.randomUUID().toString();
         var user = buildUser(userId, "K48-B1-3");
         when(dashboardQueryPort.getUser(userId)).thenReturn(user);
 
         // When: Operator fetches user by ID
-        ResponseEntity<OperatorUserResponse> response = operatorUserController.getUser(userId);
+        ResponseEntity<OperatorUserResponse> response = operatorUserController.getUser(userId, accountId, callerId);
 
         // Then: Returns user with 200 OK
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();

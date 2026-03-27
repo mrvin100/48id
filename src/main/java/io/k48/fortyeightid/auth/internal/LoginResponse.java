@@ -14,9 +14,15 @@ record LoginResponse(
     record UserInfo(
             String id,
             String matricule,
+            String email,
             String name,
             List<String> roles,
             String batch,
-            String specialization
+            String specialization,
+            String status,
+            @JsonProperty("profile_completed") boolean profileCompleted,
+            @JsonProperty("last_login_at") java.time.OffsetDateTime lastLoginAt,
+            @JsonProperty("created_at") java.time.Instant createdAt,
+            @JsonProperty("updated_at") java.time.Instant updatedAt
     ) {}
 }

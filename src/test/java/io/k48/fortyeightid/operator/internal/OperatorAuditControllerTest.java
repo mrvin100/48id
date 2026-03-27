@@ -28,6 +28,8 @@ class OperatorAuditControllerTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
+    @Mock
+    private OperatorAccountService operatorAccountService;
 
     @InjectMocks
     private OperatorAuditController operatorAuditController;
@@ -35,7 +37,14 @@ class OperatorAuditControllerTest {
     @Test
     void getAuditLog_returnsPaginatedAuditLogs() {
         // Given: Audit logs exist
+        var accountId = UUID.randomUUID();
         var userId = UUID.randomUUID();
+        var callerId = userId.toString();
+        var membership = OperatorMembership.builder()
+                .userId(userId)
+                .status(OperatorMemberStatus.ACTIVE)
+                .build();
+
         var auditLog = AuditLog.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
@@ -46,12 +55,13 @@ class OperatorAuditControllerTest {
                 .build();
 
         var page = new PageImpl<>(List.of(auditLog));
+        when(operatorAccountService.listMembers(accountId)).thenReturn(List.of(membership));
         when(auditLogRepository.findWithFilters(any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
         // When: Operator queries audit log
         ResponseEntity<Page<OperatorAuditLogResponse>> response = operatorAuditController.getAuditLog(
-                userId, "LOGIN_SUCCESS", null, null, PageRequest.of(0, 20));
+                accountId, userId, "LOGIN_SUCCESS", null, null, PageRequest.of(0, 20), callerId);
 
         // Then: Returns paginated audit logs with 200 OK
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -65,16 +75,24 @@ class OperatorAuditControllerTest {
     @Test
     void getAuditLog_withNoFilters_returnsAllLogs() {
         // Given: Audit logs exist with no filter applied
+        var accountId = UUID.randomUUID();
+        var callerId = UUID.randomUUID().toString();
+        var membership = OperatorMembership.builder()
+                .userId(UUID.randomUUID())
+                .status(OperatorMemberStatus.ACTIVE)
+                .build();
+
         var page = new PageImpl<>(List.of(
                 AuditLog.builder().id(UUID.randomUUID()).action("LOGIN_SUCCESS").createdAt(Instant.now()).build(),
                 AuditLog.builder().id(UUID.randomUUID()).action("PASSWORD_RESET").createdAt(Instant.now()).build()
         ));
+        when(operatorAccountService.listMembers(accountId)).thenReturn(List.of(membership));
         when(auditLogRepository.findWithFilters(any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
         // When: Operator queries without filters
         ResponseEntity<Page<OperatorAuditLogResponse>> response = operatorAuditController.getAuditLog(
-                null, null, null, null, PageRequest.of(0, 20));
+                accountId, null, null, null, null, PageRequest.of(0, 20), callerId);
 
         // Then: Returns all logs
         assertThat(response.getBody()).isNotNull();

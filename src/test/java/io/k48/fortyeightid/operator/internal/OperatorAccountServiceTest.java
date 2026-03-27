@@ -14,8 +14,10 @@ import io.k48.fortyeightid.auth.ApiKey;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort;
 import io.k48.fortyeightid.auth.ApiKeyManagementPort.ApiKeyCreationResult;
 import io.k48.fortyeightid.auth.EmailPort;
+import io.k48.fortyeightid.auth.OperatorInviteTokenPort;
 import io.k48.fortyeightid.identity.User;
 import io.k48.fortyeightid.identity.UserQueryService;
+import io.k48.fortyeightid.identity.UserRoleService;
 import io.k48.fortyeightid.shared.exception.OperatorAccountNotFoundException;
 import io.k48.fortyeightid.shared.exception.OperatorOwnershipRequiredException;
 import java.time.Instant;
@@ -32,9 +34,10 @@ class OperatorAccountServiceTest {
 
     @Mock private OperatorAccountRepository operatorAccountRepository;
     @Mock private OperatorMembershipRepository operatorMembershipRepository;
-    @Mock private OperatorInviteTokenService operatorInviteTokenService;
+    @Mock private OperatorInviteTokenPort operatorInviteTokenPort;
     @Mock private ApiKeyManagementPort apiKeyManagementPort;
     @Mock private UserQueryService userQueryService;
+    @Mock private UserRoleService userRoleService;
     @Mock private AuditService auditService;
     @Mock private EmailPort emailPort;
 
@@ -44,37 +47,39 @@ class OperatorAccountServiceTest {
 
     @Test
     void createAccount_savesAndReturnsAccount() {
-        var adminId = UUID.randomUUID();
+        var studentId = UUID.randomUUID();
         var saved = buildAccount(UUID.randomUUID(), "K48 Ops");
         when(operatorAccountRepository.save(any())).thenReturn(saved);
 
-        var result = service.createAccount("K48 Ops", null, adminId);
+        var result = service.createAccountForStudent("K48 Ops", null, studentId);
 
         assertThat(result.getName()).isEqualTo("K48 Ops");
         assertThat(result.getId()).isEqualTo(saved.getId());
-        verify(auditService).log(eq(adminId), eq("OPERATOR_ACCOUNT_CREATED"), any());
+        verify(auditService).log(eq(studentId), eq("OPERATOR_ACCOUNT_CREATED"), any());
     }
 
     // ── Invite — email sent after commit ──────────────────────────────────────
 
     @Test
-    void inviteMember_savesMembershipAndRegistersAfterCommitEmail() {
-        var adminId = UUID.randomUUID();
+    void inviteMemberByMatricule_savesMembershipAndSendsEmail() {
+        var ownerId = UUID.randomUUID();
         var accountId = UUID.randomUUID();
-        var userId = UUID.randomUUID();
-        var account = buildAccount(accountId, "K48 Ops");
-        var user = buildUser(userId);
+        var inviteeId = UUID.randomUUID();
+        var invitee = buildUser(inviteeId);
+        var ownerMembership = buildMembership(accountId, ownerId, OperatorMemberRole.OWNER, OperatorMemberStatus.ACTIVE);
 
-        when(operatorAccountRepository.findById(accountId)).thenReturn(Optional.of(account));
-        when(userQueryService.findById(userId)).thenReturn(Optional.of(user));
-        when(operatorInviteTokenService.createInviteToken(eq(userId), anyLong())).thenReturn("raw-token");
+        when(operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, inviteeId))
+                .thenReturn(Optional.empty());
+        when(userQueryService.findByMatricule("K48-001")).thenReturn(Optional.of(invitee));
+        when(operatorInviteTokenPort.createInviteToken(eq(inviteeId), eq(accountId), anyLong())).thenReturn("raw-token");
 
-        service.inviteMember(accountId, userId, "OWNER", adminId);
+        service.inviteMemberByMatricule(accountId, "K48-001", ownerId);
 
         verify(operatorMembershipRepository).save(any(OperatorMembership.class));
-        // No active transaction in unit test — email is called directly (fallback path)
-        verify(emailPort).sendOperatorInviteEmail(eq(user.getEmail()), eq(user.getName()), eq("raw-token"));
-        verify(auditService).log(eq(adminId), eq("OPERATOR_MEMBER_INVITED"), any());
+        verify(emailPort).sendOperatorInviteEmail(eq(invitee.getEmail()), eq(invitee.getName()), eq("raw-token"));
+        verify(auditService).log(eq(ownerId), eq("OPERATOR_MEMBER_INVITED"), any());
     }
 
     // ── Accept invite — exact lookup by accountId ─────────────────────────────

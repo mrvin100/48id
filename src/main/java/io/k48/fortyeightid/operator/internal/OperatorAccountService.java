@@ -212,7 +212,8 @@ class OperatorAccountService {
         var account = findAccount(accountId);
         if (account.getOwnedApiKeyId() == null)
             throw new OperatorAccountNotFoundException("No API key linked to this operator account");
-        return apiKeyManagementPort.rotateApiKey(account.getOwnedApiKeyId(), userId);
+        var result = apiKeyManagementPort.rotateApiKey(account.getOwnedApiKeyId(), userId);
+        return new OperatorApiKeyRotationResult(result.rawKey(), result.applicationName(), result.rotatedAt());
     }
 
     @Transactional
