@@ -1,11 +1,9 @@
 package io.k48.fortyeightid.operator.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.k48.fortyeightid.admin.TrafficQueryPort;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -19,12 +17,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminOperatorAccountControllerTest {
 
     @Mock private OperatorAccountService operatorAccountService;
+    @Mock private TrafficQueryPort trafficQueryPort;
     @InjectMocks private AdminOperatorAccountController controller;
 
     @Test
     void listAccounts_returnsAllAccounts() {
         var account = buildAccount(UUID.randomUUID(), "K48 Ops");
-        when(operatorAccountService.listAccounts()).thenReturn(List.of(account));
+        when(operatorAccountService.listAllAccounts()).thenReturn(List.of(account));
 
         var response = controller.listAccounts();
 
@@ -34,28 +33,15 @@ class AdminOperatorAccountControllerTest {
     }
 
     @Test
-    void createAccount_returns201WithBody() {
-        var adminId = UUID.randomUUID();
-        var request = new AdminOperatorAccountController.CreateAccountRequest("K48 Ops", "desc");
-        var account = buildAccount(UUID.randomUUID(), "K48 Ops");
-
-        when(operatorAccountService.createAccount(eq("K48 Ops"), eq("desc"), any(UUID.class))).thenReturn(account);
-
-        var response = controller.createAccount(request, adminId.toString());
-
-        assertThat(response.getStatusCode().value()).isEqualTo(201);
-        assertThat(response.getBody().name()).isEqualTo("K48 Ops");
-    }
-
-    @Test
-    void deleteAccount_returns204() {
+    void getAccount_returnsAccount() {
         var accountId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
+        var account = buildAccount(accountId, "K48 Ops");
+        when(operatorAccountService.getAccount(accountId)).thenReturn(account);
 
-        var response = controller.deleteAccount(accountId, adminId.toString());
+        var response = controller.getAccount(accountId);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(204);
-        verify(operatorAccountService).deleteAccount(accountId, adminId);
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody().name()).isEqualTo("K48 Ops");
     }
 
     @Test
@@ -69,30 +55,6 @@ class AdminOperatorAccountControllerTest {
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).hasSize(1);
         assertThat(response.getBody().get(0).memberRole()).isEqualTo("OWNER");
-    }
-
-    @Test
-    void inviteMember_returns201() {
-        var accountId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
-        var request = new AdminOperatorAccountController.InviteRequest(UUID.randomUUID(), OperatorMemberRole.OWNER);
-
-        var response = controller.inviteMember(accountId, request, adminId.toString());
-
-        assertThat(response.getStatusCode().value()).isEqualTo(201);
-        verify(operatorAccountService).inviteMember(eq(accountId), eq(request.userId()), eq("OWNER"), eq(adminId));
-    }
-
-    @Test
-    void removeMember_returns204() {
-        var accountId = UUID.randomUUID();
-        var userId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
-
-        var response = controller.removeMember(accountId, userId, adminId.toString());
-
-        assertThat(response.getStatusCode().value()).isEqualTo(204);
-        verify(operatorAccountService).removeMember(accountId, userId, adminId);
     }
 
     private OperatorAccount buildAccount(UUID id, String name) {

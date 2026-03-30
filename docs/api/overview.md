@@ -1,85 +1,88 @@
-# API overview
+# API Overview
 
 ## Base URL
 
-The default local development base URL is:
-
-```text
+```
 http://localhost:8080/api/v1
 ```
 
-In production, use your deployed instance URL.
+## API Categories
 
-## API categories
+| Category | Path prefix | Auth |
+|---|---|---|
+| [Authentication](authentication.md) | `/auth/*` | None / Bearer |
+| [Identity (self)](identity.md) | `/me` | Bearer |
+| [Admin operations](admin.md) | `/admin/*` | Bearer + `ROLE_ADMIN` |
+| [Operator operations](operator.md) | `/operator/*` | Bearer + `ROLE_OPERATOR` |
+| [Integration (external)](integration.md) | `/auth/verify-token`, `/users/{id}/identity` | `X-API-Key` |
+| [Error reference](errors.md) | — | — |
 
-- [Authentication API](authentication.md)
-- [Identity management API](identity.md)
-- [Admin operations API](admin.md)
-- [Public integration API](integration.md)
-- [Error model](errors.md)
-
-## Authentication modes
+## Authentication Modes
 
 ### Bearer JWT
-
-Used for user-facing protected endpoints.
-
+Used for all user-facing protected endpoints.
 ```http
 Authorization: Bearer <access_token>
 ```
 
-### API key
-
-Used only for trusted application endpoints.
-
+### API Key
+Used for trusted backend-to-backend integration.
 ```http
 X-API-Key: <raw_api_key>
 ```
 
-## Content type
+## Role System
 
-Unless otherwise noted, requests and responses use JSON.
+| Role | JWT claim | Access |
+|---|---|---|
+| `ADMIN` | `ROLE_ADMIN` | All admin endpoints |
+| `STUDENT` | `ROLE_STUDENT` | Self-service endpoints (`/me`) |
+| `STUDENT + OPERATOR` | `ROLE_STUDENT,ROLE_OPERATOR` | Student + all `/operator/*` endpoints |
 
-```http
-Content-Type: application/json
-Accept: application/json
-```
+> **Note**: JWT roles may be encoded as a comma-separated string in a single array element: `["STUDENT,ROLE_OPERATOR"]`. The 48ID-Web BFF handles this format by splitting on commas before role comparison.
 
 ## Pagination
 
-Admin list endpoints return Spring Data `Page` payloads. Default page size is `20`.
+All list endpoints return Spring Data `Page` objects:
 
-Common query parameters:
-
-- `page`
-- `size`
-- `sort`
-
-## Time format
-
-Date-time query parameters use ISO 8601 format, for example:
-
-```text
-2026-03-12T14:30:00Z
+```json
+{
+  "content": [...],
+  "totalElements": 150,
+  "totalPages": 8,
+  "number": 0,
+  "size": 20,
+  "first": true,
+  "last": false
+}
 ```
 
-## Rate limiting
+Common query parameters: `page` (0-indexed), `size` (default 20), `sort` (e.g., `createdAt,desc`).
 
-Implemented rate limits in the MVP:
+## Error Format
 
-- login: 5 requests per 15 minutes per matricule
-- forgot password: 3 requests per hour per email/IP
-- global IP protection: 100 requests per minute per IP
+RFC 7807 Problem Details:
+```json
+{
+  "type": "https://48id.k48.io/errors/conflict",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "User is already an active member of this account",
+  "instance": "/api/v1/operator/accounts/xxx/invite"
+}
+```
 
-When a limit is exceeded, the service returns HTTP `429 Too Many Requests`.
+## Rate Limiting
 
-Rate limit state is tracked in-memory per instance. The following headers are exposed on responses:
+| Endpoint | Limit |
+|---|---|
+| `POST /auth/login` | 5 requests / 15 min per matricule |
+| `POST /auth/forgot-password` | 3 requests / hour per email/IP |
+| Global | 100 requests / min per IP |
 
-- `X-RateLimit-Limit`
-- `X-RateLimit-Remaining`
-- `X-RateLimit-Reset`
+Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
-## Interactive API docs
+## Interactive Docs
 
-- Swagger UI: `/api/v1/docs`
-- OpenAPI JSON: `/api-docs`
+- Swagger UI: `http://localhost:8080/api/v1/docs`
+- OpenAPI JSON: `http://localhost:8080/api-docs`

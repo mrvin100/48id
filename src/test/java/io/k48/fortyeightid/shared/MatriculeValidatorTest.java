@@ -18,9 +18,9 @@ class MatriculeValidatorTest {
 
     @Test
     void validate_invalidFormat_returnsError() {
-        var result = MatriculeValidator.validate("K48-2024-001", "2024");
+        var result = MatriculeValidator.validate("K48-2024-001", "B1");
         assertThat(result).isPresent();
-        assertThat(result.get()).contains("does not match required format");
+        assertThat(result.get()).contains("does not match required format K48-B{n}-{seq}");
     }
 
     @Test

@@ -50,6 +50,9 @@ class AdminUserService {
         if (targetUserId.equals(adminUserId)) {
             throw new CannotChangeOwnRoleException("Admins cannot change their own role");
         }
+        if ("OPERATOR".equals(newRole)) {
+            throw new IllegalArgumentException("OPERATOR role cannot be assigned by admin. It is earned through operator account ownership.");
+        }
 
         var user = userQueryService.findById(targetUserId)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUserId));

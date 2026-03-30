@@ -1,6 +1,7 @@
 package io.k48.fortyeightid.auth.internal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 record LoginResponse(
         @JsonProperty("access_token") String accessToken,
@@ -13,9 +14,15 @@ record LoginResponse(
     record UserInfo(
             String id,
             String matricule,
+            String email,
             String name,
-            String role,
+            List<String> roles,
             String batch,
-            String specialization
+            String specialization,
+            String status,
+            @JsonProperty("profile_completed") boolean profileCompleted,
+            @JsonProperty("last_login_at") java.time.OffsetDateTime lastLoginAt,
+            @JsonProperty("created_at") java.time.Instant createdAt,
+            @JsonProperty("updated_at") java.time.Instant updatedAt
     ) {}
 }

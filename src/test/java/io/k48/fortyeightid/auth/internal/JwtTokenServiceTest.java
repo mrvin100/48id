@@ -50,7 +50,7 @@ class JwtTokenServiceTest {
     private UserPrincipal createPrincipal() {
         var user = User.builder()
                 .id(UUID.randomUUID())
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("$2a$10$hash")
@@ -63,7 +63,7 @@ class JwtTokenServiceTest {
     private User createUser() {
         return User.builder()
                 .id(UUID.randomUUID())
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("$2a$10$hash")
@@ -82,7 +82,7 @@ class JwtTokenServiceTest {
 
         var jwt = jwtTokenService.validateTokenInternal(token);
         assertThat(jwt.getSubject()).isEqualTo(user.getId().toString());
-        assertThat((String) jwt.getClaim("matricule")).isEqualTo("K48-2024-001");
+        assertThat((String) jwt.getClaim("matricule")).isEqualTo("K48-B1-1");
         assertThat((String) jwt.getClaim("name")).isEqualTo("Test User");
         assertThat((String) jwt.getClaim("batch")).isEqualTo("2024");
         assertThat(jwt.getIssuer().toString()).isEqualTo("http://localhost:8080");

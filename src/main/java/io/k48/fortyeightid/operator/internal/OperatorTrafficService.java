@@ -13,7 +13,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -26,16 +25,14 @@ class OperatorTrafficService {
     private final AuditLogRepository auditLogRepository;
     private final UserQueryService userQueryService;
 
-    OperatorTrafficResponse getTrafficForOperator(UUID userId) {
-        var membership = operatorMembershipRepository.findAllByUserId(userId).stream()
-                .filter(m -> m.getStatus() == OperatorMemberStatus.ACTIVE)
-                .findFirst()
-                .orElseThrow(() -> new AccessDeniedException(
-                        "User is not an active member of any operator account"));
-
-        var account = operatorAccountRepository.findById(membership.getOperatorAccountId())
+    /**
+     * Returns traffic data scoped to the given operator account.
+     * Authorization (membership check) is done in the controller before calling this.
+     */
+    OperatorTrafficResponse getTrafficForAccount(UUID accountId) {
+        var account = operatorAccountRepository.findById(accountId)
                 .orElseThrow(() -> new OperatorAccountNotFoundException(
-                        "Operator account not found: " + membership.getOperatorAccountId()));
+                        "Operator account not found: " + accountId));
 
         // API key calls — pre-compute hour-bucket counts in a single pass
         List<OperatorTrafficResponse.ApiKeyCall> apiKeyCalls = List.of();

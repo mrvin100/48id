@@ -29,17 +29,17 @@ class UserDetailsServiceImplTest {
     @Test
     void loadUserByUsername_returnsUserPrincipal() {
         var user = User.builder()
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test")
                 .passwordHash("$2a$10$hash")
                 .status(UserStatus.ACTIVE)
                 .build();
-        when(userQueryService.findByMatricule("K48-2024-001")).thenReturn(Optional.of(user));
+        when(userQueryService.findByMatricule("K48-B1-1")).thenReturn(Optional.of(user));
 
-        var principal = userDetailsService.loadUserByUsername("K48-2024-001");
+        var principal = userDetailsService.loadUserByUsername("K48-B1-1");
 
-        assertThat(principal.getUsername()).isEqualTo("K48-2024-001");
+        assertThat(principal.getUsername()).isEqualTo("K48-B1-1");
         assertThat(principal.isEnabled()).isTrue();
     }
 
@@ -54,15 +54,15 @@ class UserDetailsServiceImplTest {
     @Test
     void loadUserByUsername_throwsWhenSuspended() {
         var user = User.builder()
-                .matricule("K48-2024-002")
+                .matricule("K48-B1-2")
                 .email("sus@k48.io")
                 .name("Suspended")
                 .passwordHash("$2a$10$hash")
                 .status(UserStatus.SUSPENDED)
                 .build();
-        when(userQueryService.findByMatricule("K48-2024-002")).thenReturn(Optional.of(user));
+        when(userQueryService.findByMatricule("K48-B1-2")).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userDetailsService.loadUserByUsername("K48-2024-002"))
+        assertThatThrownBy(() -> userDetailsService.loadUserByUsername("K48-B1-2"))
                 .isInstanceOf(DisabledException.class);
     }
 }

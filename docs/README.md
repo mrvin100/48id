@@ -26,6 +26,17 @@ docs/
 └── GLOSSARY.md         # Terms and concepts
 ```
 
+## Documentation Updates
+
+This documentation reflects the **current implemented state** of the 48ID MVP, including:
+- Operator account management (create, invite, remove members)
+- Operator API key lifecycle (create, rotate, revoke)
+- API consumer tracking (users who authenticated via operator API keys)
+- Admin traffic aggregation across all operator accounts
+- Role system: `ADMIN > STUDENT > OPERATOR` (OPERATOR is a capability, not a login role)
+
+---
+
 ## Quick Navigation
 
 ### Getting Started
@@ -43,10 +54,11 @@ docs/
 
 ### API Reference
 
-- 📚 **[API Overview](api/overview.md)** — API introduction and conventions
+- 📚 **[API Overview](api/overview.md)** — API introduction, roles, pagination, error format
 - 🔑 **[Authentication API](api/authentication.md)** — Login, tokens, password flows
 - 👤 **[Identity API](api/identity.md)** — User profile operations
-- 🔧 **[Admin API](api/admin.md)** — User management, audit, API keys
+- 🔧 **[Admin API](api/admin.md)** — User management, audit, API keys, traffic dashboard
+- 🏢 **[Operator API](api/operator.md)** — Operator accounts, members, API keys, consumers, traffic
 - 🔗 **[Integration API](api/integration.md)** — Token verification, public identity
 - ❌ **[Error Reference](api/errors.md)** — Error codes and handling
 

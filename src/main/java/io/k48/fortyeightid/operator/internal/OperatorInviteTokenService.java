@@ -14,7 +14,7 @@ class OperatorInviteTokenService {
 
     private final OperatorInviteTokenPort operatorInviteTokenPort;
 
-    String createInviteToken(UUID userId, long ttlSeconds) {
-        return operatorInviteTokenPort.createInviteToken(userId, ttlSeconds);
+    String createInviteToken(UUID userId, UUID accountId, long ttlSeconds) {
+        return operatorInviteTokenPort.createInviteToken(userId, accountId, ttlSeconds);
     }
 }

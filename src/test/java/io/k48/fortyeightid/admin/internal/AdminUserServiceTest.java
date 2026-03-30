@@ -43,13 +43,13 @@ class AdminUserServiceTest {
     void unlockAccount_unlocksUserAndLogsEvent() {
         var adminId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
-        var user = createUser(targetUserId, "K48-2024-001");
+        var user = createUser(targetUserId, "K48-B1-1");
 
         when(userQueryService.findById(targetUserId)).thenReturn(Optional.of(user));
 
         adminUserService.unlockAccount(targetUserId, adminId);
 
-        verify(loginAttemptService, times(1)).unlockAccount("K48-2024-001", adminId);
+        verify(loginAttemptService, times(1)).unlockAccount("K48-B1-1", adminId);
         verify(auditService, times(1)).log(eq(adminId), eq("ACCOUNT_UNLOCKED_BY_ADMIN"), any());
     }
 

@@ -42,7 +42,7 @@ class UserServiceTest {
     @Test
     void updateProfile_updatesPhoneAndSpecialization() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -58,7 +58,7 @@ class UserServiceTest {
     @Test
     void updateProfile_setsProfileCompletedToTrue() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
         user.setName("John Doe");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -73,7 +73,7 @@ class UserServiceTest {
     @Test
     void updateProfile_doesNotChangeProfileCompletedIfAlreadyTrue() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", true);
+        var user = createUser(userId, "K48-B1-1", true);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -87,7 +87,7 @@ class UserServiceTest {
     @Test
     void updateProfile_handlesNullPhoneGracefully() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -102,7 +102,7 @@ class UserServiceTest {
     @Test
     void updateProfile_handlesNullSpecializationGracefully() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -128,7 +128,7 @@ class UserServiceTest {
     @Test
     void updateProfile_doesNotSetProfileCompletedWithoutName() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
         user.setName(null);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -143,7 +143,7 @@ class UserServiceTest {
     @Test
     void updateProfile_doesNotSetProfileCompletedWithBlankName() {
         var userId = UUID.randomUUID();
-        var user = createUser(userId, "K48-2024-001", false);
+        var user = createUser(userId, "K48-B1-1", false);
         user.setName("  ");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));

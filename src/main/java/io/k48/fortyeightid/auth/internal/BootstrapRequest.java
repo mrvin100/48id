@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
  */
 record BootstrapRequest(
         @NotBlank(message = "Matricule is required")
-        @Pattern(regexp = "^K48-\\d{4}-\\d{3}$", message = "Matricule must follow format K48-YYYY-XXX")
+        @Pattern(regexp = "^K48-B[0-9]{1,4}-[0-9]+$", message = "Matricule must follow format K48-B{n}-{seq}")
         String matricule,
 
         @NotBlank(message = "Email is required")

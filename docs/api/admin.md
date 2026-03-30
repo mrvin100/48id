@@ -6,102 +6,65 @@ All endpoints on this page require a bearer token for a user with the `ADMIN` ro
 
 ### `GET /api/v1/admin/users`
 
-List users with optional filters.
+Retrieve paginated list of users with optional filtering.
 
-#### Query parameters
+**Query parameters:**
+- `page` — zero-indexed page number (default: 0)
+- `size` — page size (default: 20)
+- `sort` — sort criteria, e.g., `createdAt,desc`
+- `status` — filter by status (`ACTIVE`, `PENDING_ACTIVATION`, `SUSPENDED`)
+- `role` — filter by role (`ADMIN`, `STUDENT`)
+- `search` — search by matricule or email
 
-- `status` — `ACTIVE`, `PENDING_ACTIVATION`, `SUSPENDED`
-- `batch` — batch filter
-- `role` — role filter
-- `page`, `size`, `sort` — Spring Data paging controls
-
-#### Response `200`
-
-Returns a paginated Spring Data `Page<UserResponse>`.
+**Response `200`:**
+```json
+{
+  "content": [
+    {
+      "id": "bca4f2f6-3fef-4bc4-8d32-9ee6bd3728e3",
+      "matricule": "K48-B1-1",
+      "email": "student@k48.io",
+      "name": "Ama Owusu",
+      "phone": "+237600000000",
+      "batch": "B1",
+      "specialization": "Software Engineering",
+      "status": "ACTIVE",
+      "roles": ["ROLE_STUDENT"],
+      "createdAt": "2026-03-12T14:46:39Z",
+      "updatedAt": "2026-03-12T14:46:39Z"
+    }
+  ],
+  "totalElements": 150,
+  "totalPages": 8,
+  "number": 0,
+  "size": 20
+}
+```
 
 ---
 
-### `GET /api/v1/admin/users/{id}`
-
-Get a single user by ID.
-
-### `PUT /api/v1/admin/users/{id}`
-
-Update managed user fields.
-
-#### Request body
-
-```json
-{
-  "matricule": "K48-2024-001",
-  "email": "student@k48.io",
-  "name": "Ama Owusu",
-  "phone": "+237600000000",
-  "batch": "2024",
-  "specialization": "Software Engineering"
-}
-```
-
-### `PUT /api/v1/admin/users/{id}/role`
-
-Change the user's role.
-
-#### Request body
-
-```json
-{
-  "role": "ADMIN"
-}
-```
-
 ### `PUT /api/v1/admin/users/{id}/status`
 
-Change the user's status.
+Change user account status.
 
-#### Request body
-
+**Request body:**
 ```json
-{
-  "status": "SUSPENDED"
-}
+{ "status": "SUSPENDED" }
 ```
+
+Valid statuses: `ACTIVE`, `SUSPENDED`, `PENDING_ACTIVATION`
+
+---
 
 ### `POST /api/v1/admin/users/{id}/reset-password`
 
-Trigger a password reset email for the target user.
+Force a password reset by sending reset email to user.
 
-#### Response `200`
-
-```json
-{
-  "message": "Password reset email sent."
-}
-```
-
-### `POST /api/v1/admin/users/{id}/unlock`
-
-Unlock a locked account.
-
-#### Response `200`
-
-No body.
+---
 
 ### `DELETE /api/v1/admin/users/{id}`
 
-Soft-delete the target user.
-
-#### Response `204`
-
-No body.
-
-### Common user-admin errors
-
-- `400` validation failure
-- `400` self-protection errors such as changing own role or deleting own account
-- `401` invalid or missing bearer token
-- `403` caller lacks `ADMIN`
-- `404` user not found
-- `409` duplicate matricule or duplicate email
+Delete a user account permanently. Returns `204 No Content`.
 
 ---
 
@@ -109,39 +72,35 @@ No body.
 
 ### `GET /api/v1/admin/users/import/template`
 
-Download the CSV template used for bulk import.
+Download CSV template for bulk user import.
 
-#### Response `200`
+**Response `200`:** CSV with headers: `matricule,email,name,phone,batch,specialization`
 
-Plain-text CSV content.
+---
 
 ### `POST /api/v1/admin/users/import`
 
-Import users from a CSV file upload.
+Import users from CSV file. Multipart form with `file` parameter.
 
-#### Request
+**Validation rules:**
+- `matricule` — required, unique, format `K48-B{batch}-{seq}`
+- `email` — required, valid email format, must end with `@k48.io`, unique
+- `name` — required
+- `phone` — optional, no strict format validation at import time
+- `batch` — required, format `B\d+` (e.g., B1, B2)
+- `specialization` — required
 
-`multipart/form-data` with field name `file`.
-
-#### Response `200`
-
+**Response `200`:**
 ```json
 {
-  "imported": 10,
+  "imported": 45,
   "failed": 2,
   "errors": [
-    {
-      "row": 5,
-      "matricule": "K48-2024-004",
-      "error": "INVALID_EMAIL_FORMAT"
-    }
+    { "row": 10, "matricule": "K48-B1-55", "error": "MATRICULE_ALREADY_EXISTS" },
+    { "row": 25, "matricule": "K48-B1-70", "error": "INVALID_EMAIL_FORMAT" }
   ]
 }
 ```
-
-#### Response `400`
-
-The same `CsvImportResult` shape is used for file-format or parsing failures.
 
 ---
 
@@ -149,37 +108,69 @@ The same `CsvImportResult` shape is used for file-format or parsing failures.
 
 ### `GET /api/v1/admin/audit-log`
 
-Retrieve paginated audit entries.
+Retrieve paginated audit log.
 
-#### Query parameters
+**Query parameters:** `page`, `size`, `sort`, `startDate`, `endDate`, `action`
 
-- `userId` — optional UUID filter
-- `eventType` — optional event type filter
-- `from` — optional ISO 8601 lower bound
-- `to` — optional ISO 8601 upper bound
-- `page`, `size`, `sort` — paging controls
-
-### `GET /api/v1/admin/audit-log/login-history`
-
-Retrieve paginated login-related audit entries for a specific user.
-
-#### Query parameters
-
-- `userId` — required UUID
-- `from` — optional ISO 8601 lower bound
-- `to` — optional ISO 8601 upper bound
-- `page`, `size`, `sort` — paging controls
-
-#### Audit response shape
-
+**Response `200`:**
 ```json
 {
-  "id": "fe736e9f-7ef6-47d6-98aa-6f12f06d52d9",
-  "userId": "bca4f2f6-3fef-4bc4-8d32-9ee6bd3728e3",
-  "action": "LOGIN_SUCCESS",
-  "ipAddress": "127.0.0.1",
-  "userAgent": "Mozilla/5.0",
-  "timestamp": "2026-03-12T14:46:39Z"
+  "content": [
+    {
+      "id": "abc123",
+      "action": "USER_CREATED",
+      "userId": "bca4f2f6-...",
+      "details": "{}",
+      "ipAddress": "192.168.1.1",
+      "userAgent": "Mozilla/5.0...",
+      "timestamp": "2026-03-12T14:46:39Z"
+    }
+  ],
+  "totalElements": 500,
+  "totalPages": 25
+}
+```
+
+---
+
+## Dashboard metrics (Admin only)
+
+### `GET /api/v1/admin/dashboard/metrics`
+
+Returns snapshot metrics: total users, active users, active sessions, pending activations.
+
+### `GET /api/v1/admin/dashboard/login-activity`
+
+Returns 7-day login activity data for charting.
+
+### `GET /api/v1/admin/dashboard/recent-activity`
+
+Returns most recent audit events.
+
+### `GET /api/v1/admin/dashboard/traffic`
+
+Returns `AggregatedTrafficView` — aggregated API key call and member action stats across **all operator accounts**.
+
+**Response `200`:**
+```json
+{
+  "accounts": [
+    {
+      "accountId": "uuid",
+      "accountName": "48Hub Platform",
+      "apiKeyTraffic": {
+        "totalCalls": 1240,
+        "last24h": 45,
+        "lastCalledAt": "2026-03-30T13:00:00Z"
+      },
+      "memberActivity": {
+        "totalActions": 230,
+        "last24h": 12,
+        "lastActionAt": "2026-03-30T12:00:00Z"
+      }
+    }
+  ],
+  "generatedAt": "2026-03-30T14:00:00Z"
 }
 ```
 
@@ -187,45 +178,31 @@ Retrieve paginated login-related audit entries for a specific user.
 
 ## API key administration
 
+### `GET /api/v1/admin/api-keys`
+
+List all system API keys with metadata (key value never returned after creation).
+
 ### `POST /api/v1/admin/api-keys`
 
-Create an API key for a trusted application.
+Create a new admin-managed API key.
 
-#### Request body
-
+**Request body:**
 ```json
-{
-  "applicationName": "48Hub Backend",
-  "description": "Token verification for 48Hub"
-}
+{ "applicationName": "48Hub Integration", "description": "For 48Hub backend" }
 ```
 
-#### Response `201`
-
+**Response `201`:**
 ```json
 {
-  "key": "k48_live_xxx",
-  "applicationName": "48Hub Backend",
+  "id": "key-uuid",
+  "applicationName": "48Hub Integration",
+  "key": "48id_sk_xxx...",
   "createdAt": "2026-03-12T14:46:39Z"
 }
 ```
 
-> Store the raw key immediately. The raw value is only returned at creation and rotation time.
-
-### `GET /api/v1/admin/api-keys`
-
-List registered API keys.
-
-### `POST /api/v1/admin/api-keys/{id}/rotate`
-
-Rotate an existing API key and return a new raw secret.
+⚠️ The raw key is only shown once — save immediately.
 
 ### `DELETE /api/v1/admin/api-keys/{id}`
 
-Revoke an API key.
-
-#### Common API key admin errors
-
-- `401` invalid or missing bearer token
-- `403` caller lacks `ADMIN`
-- `404` API key not found
+Revoke an API key. Returns `204 No Content`.

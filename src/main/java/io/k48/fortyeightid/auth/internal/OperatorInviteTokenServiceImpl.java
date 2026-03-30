@@ -13,44 +13,35 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 class OperatorInviteTokenServiceImpl implements OperatorInviteTokenPort {
 
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final OperatorInviteTokenRepository repository;
 
     @Override
     @Transactional
-    public String createInviteToken(UUID userId, long ttlSeconds) {
-        if (ttlSeconds <= 0) {
-            throw new IllegalArgumentException("ttlSeconds must be positive, got: " + ttlSeconds);
-        }
-        passwordResetTokenRepository.deleteAllByUserIdAndPurpose(userId, ResetTokenPurpose.OPERATOR_INVITE);
-        var rawToken = UUID.randomUUID().toString();
-        var token = PasswordResetToken.builder()
+    public String createInviteToken(UUID userId, UUID accountId, long ttlSeconds) {
+        if (ttlSeconds <= 0) throw new IllegalArgumentException("ttlSeconds must be positive");
+        // Invalidate any existing pending invite for this user+account
+        repository.deleteAllByUserId(userId);
+        var raw = UUID.randomUUID().toString();
+        repository.save(OperatorInviteToken.builder()
+                .token(raw)
                 .userId(userId)
-                .token(rawToken)
-                .purpose(ResetTokenPurpose.OPERATOR_INVITE)
+                .accountId(accountId)
                 .expiresAt(Instant.now().plusSeconds(ttlSeconds))
-                .build();
-        passwordResetTokenRepository.save(token);
-        return rawToken;
+                .build());
+        return raw;
     }
 
     @Override
     @Transactional
-    public UUID validateAndConsumeInviteToken(String rawToken) {
-        var token = passwordResetTokenRepository.findByToken(rawToken)
+    public InviteTokenPayload validateAndConsumeInviteToken(String raw) {
+        var token = repository.findByToken(raw)
                 .orElseThrow(() -> new ResetTokenInvalidException("Invalid invite token."));
-
-        if (token.getPurpose() != ResetTokenPurpose.OPERATOR_INVITE) {
+        if (token.isUsed())
             throw new ResetTokenInvalidException("Invalid invite token.");
-        }
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        if (token.getExpiresAt().isBefore(Instant.now()))
             throw new ResetTokenExpiredException("This invite link has expired. Please request a new one.");
-        }
-        if (token.isUsed()) {
-            throw new ResetTokenInvalidException("Invalid invite token.");
-        }
-
         token.setUsed(true);
-        passwordResetTokenRepository.save(token);
-        return token.getUserId();
+        repository.save(token);
+        return new InviteTokenPayload(token.getUserId(), token.getAccountId());
     }
 }

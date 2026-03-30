@@ -3,17 +3,13 @@ package io.k48.fortyeightid.operator.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.k48.fortyeightid.admin.DashboardQueryPort;
-import io.k48.fortyeightid.identity.Role;
-import io.k48.fortyeightid.identity.User;
-import io.k48.fortyeightid.identity.UserStatus;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,78 +26,59 @@ import org.springframework.http.ResponseEntity;
 class OperatorUserControllerTest {
 
     @Mock
-    private DashboardQueryPort dashboardQueryPort;
+    private OperatorApiConsumerService operatorApiConsumerService;
+    @Mock
+    private OperatorAccountService operatorAccountService;
 
     @InjectMocks
     private OperatorUserController operatorUserController;
 
     @Test
-    void listUsers_returnsPaginatedUsers() {
-        // Given: Users exist
-        var user = buildUser(UUID.randomUUID(), "K48-B1-1");
-        var page = new PageImpl<>(List.of(user));
-        when(dashboardQueryPort.listUsers(any(), any(), any(), any(Pageable.class))).thenReturn(page);
+    void listApiConsumers_returnsPaginatedConsumers() {
+        // Given: API consumers exist for the account
+        var accountId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var callerId = userId.toString();
+        var consumer = buildConsumer(UUID.randomUUID(), "K48-B1-1");
+        Page<OperatorApiConsumerService.ApiConsumerSummary> page = new PageImpl<>(List.of(consumer));
 
-        // When: Operator lists users
-        ResponseEntity<Page<OperatorUserResponse>> response = operatorUserController.listUsers(
-                null, null, null, PageRequest.of(0, 20));
+        doNothing().when(operatorAccountService).requireActiveMember(eq(accountId), eq(userId));
+        when(operatorApiConsumerService.listApiConsumers(eq(accountId), any(Pageable.class))).thenReturn(page);
 
-        // Then: Returns paginated users with 200 OK
+        // When: Operator lists API consumers
+        ResponseEntity<Page<OperatorUserController.ApiConsumerResponse>> response =
+                operatorUserController.listApiConsumers(accountId, PageRequest.of(0, 20), callerId);
+
+        // Then: Returns paginated consumers with 200 OK
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).hasSize(1);
         assertThat(response.getBody().getContent().get(0).matricule()).isEqualTo("K48-B1-1");
-        verify(dashboardQueryPort, times(1)).listUsers(any(), any(), any(), any(Pageable.class));
+        verify(operatorApiConsumerService, times(1)).listApiConsumers(eq(accountId), any(Pageable.class));
     }
 
     @Test
-    void listUsers_withStatusFilter_passesFilterToPort() {
-        // Given: Only active users
-        var page = new PageImpl<>(List.of(buildUser(UUID.randomUUID(), "K48-B1-2")));
-        when(dashboardQueryPort.listUsers(eq(UserStatus.ACTIVE), any(), any(), any(Pageable.class)))
-                .thenReturn(page);
-
-        // When: Operator filters by ACTIVE status
-        ResponseEntity<Page<OperatorUserResponse>> response = operatorUserController.listUsers(
-                UserStatus.ACTIVE, null, null, PageRequest.of(0, 20));
-
-        // Then: Filter is forwarded to port
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getContent()).hasSize(1);
-        verify(dashboardQueryPort, times(1)).listUsers(eq(UserStatus.ACTIVE), any(), any(), any(Pageable.class));
-    }
-
-    @Test
-    void getUser_returnsUserById() {
-        // Given: A user exists
+    void listApiConsumers_verifiesActiveMembership() {
+        // Given
+        var accountId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var user = buildUser(userId, "K48-B1-3");
-        when(dashboardQueryPort.getUser(userId)).thenReturn(user);
+        var callerId = userId.toString();
+        Page<OperatorApiConsumerService.ApiConsumerSummary> emptyPage = new PageImpl<>(List.of());
 
-        // When: Operator fetches user by ID
-        ResponseEntity<OperatorUserResponse> response = operatorUserController.getUser(userId);
+        doNothing().when(operatorAccountService).requireActiveMember(eq(accountId), eq(userId));
+        when(operatorApiConsumerService.listApiConsumers(eq(accountId), any(Pageable.class))).thenReturn(emptyPage);
 
-        // Then: Returns user with 200 OK
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().id()).isEqualTo(userId);
-        assertThat(response.getBody().matricule()).isEqualTo("K48-B1-3");
-        verify(dashboardQueryPort, times(1)).getUser(userId);
+        // When
+        operatorUserController.listApiConsumers(accountId, PageRequest.of(0, 20), callerId);
+
+        // Then: membership check was called
+        verify(operatorAccountService, times(1)).requireActiveMember(accountId, userId);
     }
 
-    private User buildUser(UUID id, String matricule) {
-        var role = new Role();
-        role.setName("STUDENT");
-        return User.builder()
-                .id(id)
-                .matricule(matricule)
-                .email(matricule + "@k48.io")
-                .name("Test User")
-                .passwordHash("hash")
-                .status(UserStatus.ACTIVE)
-                .batch("B1")
-                .specialization("SE")
-                .roles(Set.of(role))
-                .build();
+    private OperatorApiConsumerService.ApiConsumerSummary buildConsumer(UUID userId, String matricule) {
+        return new OperatorApiConsumerService.ApiConsumerSummary(
+                userId, matricule, matricule + "@k48.io", "Test User",
+                "B1", "ACTIVE", 42L, Instant.now(), Instant.now()
+        );
     }
 }

@@ -60,10 +60,10 @@ class BootstrapServiceTest {
                 .email(request.email())
                 .name(request.name())
                 .status(UserStatus.ACTIVE)
-                .roles(Set.of(adminRole))
+                .roles(java.util.Set.of(adminRole))
                 .build();
 
-        when(roleQueryService.getByName("ADMIN")).thenReturn(adminRole);
+        when(roleQueryService.findByName("ADMIN")).thenReturn(java.util.Optional.of(adminRole));
         when(userQueryService.countByRolesContaining(adminRole)).thenReturn(0L);
         when(userQueryService.existsByMatricule(request.matricule())).thenReturn(false);
         when(userQueryService.existsByEmail(request.email())).thenReturn(false);
@@ -93,7 +93,7 @@ class BootstrapServiceTest {
         var adminRole = new Role();
         adminRole.setName("ADMIN");
 
-        when(roleQueryService.getByName("ADMIN")).thenReturn(adminRole);
+        when(roleQueryService.findByName("ADMIN")).thenReturn(java.util.Optional.of(adminRole));
         when(userQueryService.countByRolesContaining(adminRole)).thenReturn(1L);
 
         assertThatThrownBy(() -> bootstrapService.createFirstAdmin(request))
@@ -116,7 +116,7 @@ class BootstrapServiceTest {
         var adminRole = new Role();
         adminRole.setName("ADMIN");
 
-        when(roleQueryService.getByName("ADMIN")).thenReturn(adminRole);
+        when(roleQueryService.findByName("ADMIN")).thenReturn(java.util.Optional.of(adminRole));
         when(userQueryService.countByRolesContaining(adminRole)).thenReturn(0L);
         when(userQueryService.existsByMatricule(request.matricule())).thenReturn(true);
 
@@ -140,7 +140,7 @@ class BootstrapServiceTest {
         var adminRole = new Role();
         adminRole.setName("ADMIN");
 
-        when(roleQueryService.getByName("ADMIN")).thenReturn(adminRole);
+        when(roleQueryService.findByName("ADMIN")).thenReturn(java.util.Optional.of(adminRole));
         when(userQueryService.countByRolesContaining(adminRole)).thenReturn(0L);
         when(userQueryService.existsByMatricule(request.matricule())).thenReturn(false);
         when(userQueryService.existsByEmail(request.email())).thenReturn(true);

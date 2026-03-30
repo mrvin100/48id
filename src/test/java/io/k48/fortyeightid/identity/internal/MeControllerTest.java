@@ -67,7 +67,7 @@ class MeControllerTest {
 
         return User.builder()
                 .id(id)
-                .matricule("K48-2024-001")
+                .matricule("K48-B1-1")
                 .email("test@k48.io")
                 .name("Test User")
                 .passwordHash("hash")
