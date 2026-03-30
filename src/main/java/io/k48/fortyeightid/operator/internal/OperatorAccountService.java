@@ -69,14 +69,33 @@ class OperatorAccountService {
         requireOwner(accountId, ownerId);
 
         var invitee = userQueryService.findByMatricule(matricule)
-                .orElseThrow(() -> new UserNotFoundException("No user found with matricule: " + matricule));
+                .orElseThrow(() -> new UserNotFoundException(
+                        "No 48ID user found with matricule: " + matricule + ". Please check and try again."));
 
-        // Idempotent: skip if already an active member
-        operatorMembershipRepository.findByOperatorAccountIdAndUserId(accountId, invitee.getId())
-                .ifPresent(m -> {
-                    if (m.getStatus() == OperatorMemberStatus.ACTIVE)
-                        throw new IllegalStateException("User is already an active member of this account");
-                });
+        // Self-invite guard: owner cannot invite themselves
+        if (invitee.getId().equals(ownerId)) {
+            throw new IllegalStateException("You cannot invite yourself to your own operator account");
+        }
+
+        // Idempotency check: handle existing membership records
+        var existingMembership = operatorMembershipRepository
+                .findByOperatorAccountIdAndUserId(accountId, invitee.getId());
+
+        if (existingMembership.isPresent()) {
+            var existing = existingMembership.get();
+            if (existing.getStatus() == OperatorMemberStatus.ACTIVE) {
+                throw new IllegalStateException("User is already an active member of this account");
+            }
+            if (existing.getStatus() == OperatorMemberStatus.PENDING) {
+                // Re-invite: just refresh the token and resend the email — do not create a duplicate
+                var rawToken = operatorInviteTokenPort.createInviteToken(invitee.getId(), accountId, INVITE_TTL_SECONDS);
+                final String toEmail = invitee.getEmail();
+                final String toName = invitee.getName();
+                afterCommit(() -> emailPort.sendOperatorInviteEmail(toEmail, toName, rawToken));
+                log.info("Re-sent operator invite to {} for account {}", invitee.getMatricule(), accountId);
+                return;
+            }
+        }
 
         operatorMembershipRepository.save(OperatorMembership.builder()
                 .operatorAccountId(accountId)
@@ -141,6 +160,18 @@ class OperatorAccountService {
     @Transactional
     void removeMember(UUID accountId, UUID targetUserId, UUID ownerId) {
         requireOwner(accountId, ownerId);
+
+        // Verify the target is actually a member before attempting deletion
+        var membership = operatorMembershipRepository
+                .findByOperatorAccountIdAndUserId(accountId, targetUserId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No membership found for this user in the operator account"));
+
+        // Cannot remove the OWNER
+        if (membership.getMemberRole() == OperatorMemberRole.OWNER) {
+            throw new IllegalStateException("Cannot remove the account owner");
+        }
+
         operatorMembershipRepository.deleteByOperatorAccountIdAndUserId(accountId, targetUserId);
 
         boolean stillActive = operatorMembershipRepository.findAllByUserId(targetUserId).stream()
@@ -176,6 +207,16 @@ class OperatorAccountService {
     @Transactional(readOnly = true)
     OperatorAccount getAccount(UUID accountId) {
         return findAccount(accountId);
+    }
+
+    @Transactional(readOnly = true)
+    List<StudentOperatorController.MemberResponse> listMembersWithUsers(UUID accountId) {
+        return operatorMembershipRepository.findAllByOperatorAccountId(accountId).stream()
+                .map(m -> {
+                    var user = userQueryService.findById(m.getUserId()).orElse(null);
+                    return StudentOperatorController.MemberResponse.from(m, user);
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)

@@ -28,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 class CsvImportService {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^(\\+237|0)[1-9](\\d{8})$");
+    // Phone is optional — no strict format validation at import time
     private static final Pattern BATCH_PATTERN = Pattern.compile("^B\\d+$");
     private static final List<String> EXPECTED_HEADER = List.of("matricule", "email", "name", "phone", "batch", "specialization");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -173,9 +173,6 @@ class CsvImportService {
         }
         if (!row.email().toLowerCase().endsWith("@k48.io")) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_EMAIL_DOMAIN");
-        }
-        if (row.phone() != null && !row.phone().isBlank() && !PHONE_PATTERN.matcher(row.phone()).matches()) {
-            return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_PHONE_FORMAT");
         }
         if (!BATCH_PATTERN.matcher(row.batch()).matches()) {
             return new CsvRowError(row.rowNumber(), row.matricule(), "INVALID_BATCH_FORMAT");

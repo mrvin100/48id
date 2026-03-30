@@ -60,8 +60,7 @@ class StudentOperatorController {
     /** List members of an account the caller belongs to. */
     @GetMapping("/{id}/members")
     ResponseEntity<List<MemberResponse>> listMembers(@PathVariable UUID id) {
-        return ResponseEntity.ok(operatorAccountService.listMembers(id)
-                .stream().map(MemberResponse::from).toList());
+        return ResponseEntity.ok(operatorAccountService.listMembersWithUsers(id));
     }
 
     /** Invite a student by matricule. Caller must be OWNER. */
@@ -105,9 +104,12 @@ class StudentOperatorController {
         }
     }
 
-    record MemberResponse(UUID id, UUID userId, String memberRole, String status, Instant createdAt) {
-        static MemberResponse from(OperatorMembership m) {
+    record MemberResponse(UUID id, UUID userId, String matricule, String name,
+                           String memberRole, String status, Instant createdAt) {
+        static MemberResponse from(OperatorMembership m, io.k48.fortyeightid.identity.User user) {
             return new MemberResponse(m.getId(), m.getUserId(),
+                    user != null ? user.getMatricule() : null,
+                    user != null ? user.getName() : null,
                     m.getMemberRole().name(), m.getStatus().name(), m.getCreatedAt());
         }
     }
